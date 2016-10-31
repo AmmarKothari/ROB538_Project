@@ -108,7 +108,7 @@ generation_count = 0
 
 # INITIALIZE <population_size> Neural Nets with 8 input, 2 output and 10 hidden units for every rover.
 for rover in roverDomain.rover_list:
-    rover.setSpeed(1,0.1)
+    rover.setSpeed(2,0)
     pdb.set_trace()
     for i in range(population_size):
         NN = NeuralNet(8, 2, 10)
