@@ -13,7 +13,6 @@ class NeuralNet(object):
     def forward(self, X):
          self.z2 = np.dot(X, self.W1)
          self.a2 = self.sigmoid(self.z2)
-         # values should be scaled to 1? Ammar
          self.z3 = np.dot(self.a2,self.W2)
          yHat = self.sigmoid(self.z3)
          return yHat

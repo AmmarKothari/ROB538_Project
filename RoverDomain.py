@@ -61,7 +61,7 @@ class Rover(object):
 
     def setSpeed(self, linear, angular):
         self.speed = linear
-        self.heading = angular #changed this from linear to angular
+        self.heading = linear
 
     def walk(self, command):
         self.pos[0] += math.cos(self.heading) * self.speed

@@ -1,10 +1,9 @@
-from tkinter import *
+from Tkinter import *
 from RoverDomain import *
 from NN_Unsupervised import NeuralNet
 from operator import attrgetter
 import time, copy
 import numpy as np
-import pdb as pdb
 
 def init_canvas(roverDomain):
     """Initializes the canvas, draws pause button"""
@@ -108,8 +107,6 @@ generation_count = 0
 
 # INITIALIZE <population_size> Neural Nets with 8 input, 2 output and 10 hidden units for every rover.
 for rover in roverDomain.rover_list:
-    rover.setSpeed(2,0)
-    pdb.set_trace()
     for i in range(population_size):
         NN = NeuralNet(8, 2, 10)
         rover.population.append(NN)
@@ -117,7 +114,6 @@ for rover in roverDomain.rover_list:
 iterations = 10000
 for i in range(iterations):
     for rover in roverDomain.rover_list:
-        
         # PICK network using e-greedy
         to_mutate = pick_network_egreedy(rover.population)
         # MUTATE selected network
@@ -135,3 +131,4 @@ for i in range(iterations):
     # time.sleep(0.01)
 
 mainloop()
+
