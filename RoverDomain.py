@@ -5,20 +5,18 @@ import random, math, utils
 class RoverDomain(object):
 
 	# Constructor
-	def __init__(self, height=240, width=240):
-		self.height = height
+	def __init__(self, width=240, height=240):
 		self.width = width
+		self.height = height
 		self.rover_list = []
 		self.poi_list = []
 
 	def add_poi(self, x=0, y=0, heading=0, value=1.0):
 		poi = Poi(x, y, heading, value)
-		poi.roverDomain = self
 		self.poi_list.append(poi)
 
 	def add_rover(self, x=0, y=0, heading=0):
 		rover = Rover(x, y, heading)
-		rover.roverDomain = self
 		self.rover_list.append(rover)
 
 	# Resetting agents to random or initial starting position
@@ -40,14 +38,13 @@ class Agent(object):
 		self.pos		= (posx, posy)		# Current position
 		self.vel_lin	= (0.0,0.0)			# Linear velocity
 		self.vel_ang	= 0.0				# Angular velocity (rad/sec)
-		self.heading	= heading			# Heading direction (rad)
-		self.roverDomain = None				
+		self.heading	= heading			# Heading direction (rad)			
 
 	# Simulation step
-	def sim_step(self):
+	def sim_step(self, world_width, world_height):
 		self.update_heading();
 		self.update_pos();
-		self.bounce_walls()
+		self.bounce_walls(world_width, world_height)
 
 	# Update heading using angular velocity
 	def update_heading(self):
@@ -72,14 +69,14 @@ class Agent(object):
 		self.vel_lin = vel_lin_abs*math.cos(self.heading), vel_lin_abs*math.sin(self.heading)
 
 	# Wall bouncing
-	def bounce_walls(self):
+	def bounce_walls(self, world_width, world_height):
 
 		# Check left-right wall collisions
-		if self.pos[0] > self.roverDomain.width or self.pos[0] < 0:
+		if self.pos[0] > world_width or self.pos[0] < 0:
 			self.set_heading((1*math.pi - self.heading) % (math.pi * 2))
 
 		# Check top-bottom wall collisions
-		if self.pos[1] > self.roverDomain.height or self.pos[1] < 0:
+		if self.pos[1] > world_height or self.pos[1] < 0:
 			self.set_heading((2*math.pi - self.heading) % (math.pi * 2))
 
 # POI agent
@@ -125,10 +122,10 @@ class Rover(Agent):
 				sum += 1 / max(dist ** 2, min_dist ** 2)
 		return sum
 
-	def return_NN_inputs(self):
+	def return_NN_inputs(self,rover_list,poi_list):
 		inputs = []
 		for i in range(4):
-			inputs.append(self.return_sensor_rover(self.roverDomain.rover_list, i))
+			inputs.append(self.return_sensor_rover(rover_list, i))
 		for i in range(4):
-			inputs.append(self.return_sensor_poi(self.roverDomain.poi_list, i))
+			inputs.append(self.return_sensor_poi(poi_list, i))
 		return inputs

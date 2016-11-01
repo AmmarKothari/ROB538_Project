@@ -121,11 +121,11 @@ def sim_step():
 
 	# POIs step
 	for poi in roverDomain.poi_list:
-		poi.sim_step()
+		poi.sim_step(roverDomain.width,roverDomain.height)
 
 	# Rovers step
 	for rover in roverDomain.rover_list:
-		rover.sim_step()
+		rover.sim_step(roverDomain.width,roverDomain.height)
 
 
 # Removing the worst performing rover
