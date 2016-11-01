@@ -19,6 +19,32 @@ class RoverDomain(object):
         rover.roverDomain = self
         self.rover_list.append(rover)
 
+    def reset_agents(self, opts = 'Set'):
+        if opts == 'Set':
+            for i in self.rover_list:
+                i.pos = i.startpos
+            for i in self.poi_list:
+                i.pos = i.startpos
+        elif opts == 'RandomR':
+            for i in self.rover_list:
+                i.pos = (random.randint(0,self.width), random.randint(0,self.height))
+            for i in self.poi_list:
+                i.pos = i.startpos
+        elif opts == 'RandomP':
+            for i in self.rover_list:
+                i.pos = i.startpos
+            for i in self.poi_list:
+                i.pos = (random.randint(0,self.width), random.randint(0,self.height))
+        elif opts == 'RandomPR':
+            for i in self.rover_list:
+                i.pos = (random.randint(0,self.width), random.randint(0,self.height))
+            for i in self.poi_list:
+                i.pos = (random.randint(0,self.width), random.randint(0,self.height))
+        for i in self.rover_list:
+            i.startpos = i.pos
+        for i in self.poi_list:
+            i.startpos = i.pos
+
 class Poi(object):
     def __init__(self, posx, posy, heading, value):
         self.pos = (posx, posy)
@@ -31,7 +57,7 @@ class Poi(object):
 
     def setSpeed(self, linear, angular):
         self.speed = linear
-        self.heading = linear
+        self.heading = angular
 
     def walk(self):
         newX = self.pos[0] + math.cos(self.heading) * self.speed
@@ -54,18 +80,21 @@ class Rover(object):
         self.pos = (posx, posy)
         self.startpos = (posx, posy)
         self.type = 'rover'
-        self.speed = 0
+        self.speed = 0.0
         self.heading = heading
+        self.angular_vel = 0.0
         self.roverDomain = None
         self.population = []
 
     def setSpeed(self, linear, angular):
         self.speed = linear
-        self.heading = linear
+        self.heading = angular
 
-    def walk(self, command):
-        self.pos[0] += math.cos(self.heading) * self.speed
-        self.pos[1] += math.sin(self.heading) * self.speed
+    def walk(self, command=0):
+        newX = self.pos[0] + math.cos(self.heading) * self.speed
+        newY = self.pos[1] + math.sin(self.heading) * self.speed
+        self.pos = newX, newY
+        self.heading += self.angular_vel
 
     def return_sensor_poi(self, poiList, quadrant, max_dist=500):
         min_dist = 10
@@ -98,35 +127,16 @@ class Rover(object):
                 sum += 1 / max(dist ** 2, min_dist ** 2)
         return sum
 
-def reset_agents(opts = 'set'):
-    dimx = len(gridmatrix[0]) - 1
-    dimy = len(gridmatrix) - 1
-    if opts == 'set':
-        for i in prd_list:
-            i.pos = i.startpos
-        for i in bait_list:
-            i.pos = i.startpos
-    elif opts == 'randompr':
-        for i in prd_list:
-            i.pos = (random.randint(0,dimx), random.randint(0,dimy))
-        for i in bait_list:
-            i.pos = i.startpos
-    elif opts == 'randombait':
-        for i in prd_list:
-            i.pos = i.startpos
-        for i in bait_list:
-            i.pos = (random.randint(0,dimx), random.randint(0,dimy))
-    elif opts == 'randomall':
-        for i in prd_list:
-            i.pos = (random.randint(0,dimx), random.randint(0,dimy))
-        for i in bait_list:
-            i.pos = (random.randint(0,dimx), random.randint(0,dimy))
-    for i in prd_list:
-        i.startpos = i.pos
-    for i in bait_list:
-        i.startpos = i.pos
+    def return_NN_inputs(self):
+        inputs = []
+        for i in range(4):
+            inputs.append(self.return_sensor_rover(self.roverDomain.rover_list, i))
+        for i in range(4):
+            inputs.append(self.return_sensor_poi(self.roverDomain.poi_list, i))
+        return inputs
 
-    update_gridmatrix()
+
+
 
 def reset_random():
     for i in prd_list:
