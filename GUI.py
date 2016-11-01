@@ -17,10 +17,11 @@ NN_NUM_HIDDEN_LRS	= 10
 # Evolution parameters
 POPULATION_SIZE		= 10
 PERTURBATION		= 0.25
-EVOL_ITERATIONS		= 10
+NUM_EPISODES		= 10
 
 # Graphics parameters
 WINDOW_TITLE		= "Rob538 Project - Rover Domain"
+BKG_COLOR			= 'white'
 ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
@@ -38,14 +39,12 @@ NUM_POIS			= 8
 # =======================================================
 
 # Initialize the graphics canvas
-def init_canvas(roverDomain):
+def init_canvas():
 	global master_window
 	global canvas
-	canvas_width = roverDomain.width
-	canvas_height = roverDomain.height
 	master_window = Tk()
 	master_window.title(WINDOW_TITLE)
-	canvas = Canvas(master_window, width=canvas_width, height=canvas_height, background='#FFFFFF')
+	canvas = Canvas(master_window, width=WORLD_WIDTH, height=WORLD_HEIGHT, background=BKG_COLOR)
 	canvas.pack()
 
 # Points for drawing agent's body
@@ -66,11 +65,11 @@ def draw_world(roverDomain):
 
 	# Drawing the rovers
 	for agent in roverDomain.rover_list:
-		obj = canvas.create_polygon(get_points_triangle(agent, l=ROVER_SIZE), fill=ROVER_COLOR)
+		canvas.create_polygon(get_points_triangle(agent, l=ROVER_SIZE), fill=ROVER_COLOR)
 
 	# Drawing the POIs
 	for poi in roverDomain.poi_list:
-		obj = canvas.create_polygon(get_points_triangle(poi, l=POI_SIZE), fill=POI_COLOR)
+		canvas.create_polygon(get_points_triangle(poi, l=POI_SIZE), fill=POI_COLOR)
 
 	# Updating the canvas
 	canvas.update()
@@ -84,41 +83,49 @@ def init_world():
 
 	# Initializing rovers
 	for i in range(NUM_ROVERS):
-		roverDomain.add_rover(180 + 20*i, 200)
+		roverDomain.add_rover(random.randint(0, WORLD_HEIGHT), random.randint(0, WORLD_WIDTH), random.randint(0, 360))
 
 	# Initializing POIs
 	for i in range(NUM_POIS):
-		roverDomain.add_poi(random.randint(0, WORLD_HEIGHT), random.randint(0, WORLD_WIDTH))
+		roverDomain.add_poi(random.randint(0, WORLD_HEIGHT), random.randint(0, WORLD_WIDTH), random.randint(0, 360))
 
 	# Setting POIs initial velocities
 	for poi in roverDomain.poi_list:
-		poi.speed = random.randint(2, 8) / 20.0
 		poi.heading = random.randint(0, WORLD_HEIGHT) / WORLD_HEIGHT * 2 * math.pi
+		poi.set_vel_lin(random.randint(2, 8) / 20.0)
 
 # Takes a team of networks to evaluate rovers
 # Each network is given a performance value at the end
-def evaluate_rover_team(team, disp=True):
-    avgiter = 1
-    rewardsum = 0
-    for n in range(avgiter):
-        roverDomain.reset_agents(opts='RandomPR')
-        for i in range(NUM_SIM_STEPS):
-            for poi in roverDomain.poi_list:
-                poi.walk()
+def execute_episode():
 
-            NN_index = 0
-            for rover in roverDomain.rover_list:
-                NN = team[NN_index]
-                inputs = rover.return_NN_inputs()
-                outputs = NN.forward(inputs)
-                rover.walk(outputs)
-                NN_index += 1
+	# Randomizing starting positions
+	roverDomain.reset_agents()
 
-            if disp:
-                draw_world(roverDomain)
-        #rewardsum += calculate_reward(catch_time, steps) # REWARD STRUCTURES COME HERE!
+	# Running through each simulation step
+	for i in range(NUM_SIM_STEPS):
 
-    #NN.performance = rewardsum / avgiter
+		sim_step()
+
+		draw_world(roverDomain)
+
+		# NN_index = 0
+		# for rover in roverDomain.rover_list:
+		# 	NN = team[NN_index]
+		# 	inputs = rover.return_NN_inputs()
+		# 	outputs = NN.forward(inputs)
+		# 	rover.step(outputs)
+		# 	NN_index += 1
+
+# Iterate the world simulation
+def sim_step():
+
+	# POIs step
+	for poi in roverDomain.poi_list:
+		poi.sim_step()
+
+	# Rovers step
+	for rover in roverDomain.rover_list:
+		rover.sim_step()
 
 
 # Removing the worst performing rover
@@ -132,46 +139,45 @@ def remove_worst(NNlist, k=None):
 	return NNlist
 
 roverDomain = RoverDomain(WORLD_HEIGHT,WORLD_WIDTH)
-init_canvas(roverDomain)
+init_canvas()
 init_world()
 
 population = []
 
 # INITIALIZE <POPULATION_SIZE> Neural Nets
-# with 8 input, 2 output and 10 hidden units for every rover.
 for rover in roverDomain.rover_list:
     for i in range(POPULATION_SIZE):
         NN = NeuralNet(NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
         rover.population.append(NN)
 
 # EVOLUTION ================================================
-generation_count = 0
-for i in range(EVOL_ITERATIONS):
+episode_count = 0
+for i in range(NUM_EPISODES):
+	print "Episode %d" % episode_count
 
-    # Mutate each NN to have 2k NNs
-    for rover in roverDomain.rover_list:
-        mutantlist = []
-        for NN in rover.population:
-            mutant = copy.deepcopy(NN)
-            mutant.perturb_weights(PERTURBATION)
-            mutantlist.append(mutant)
-        rover.population += mutantlist
+	# # Mutate each NN to have 2k NNs
+	# for rover in roverDomain.rover_list:
+	# 	mutantlist = []
+	# 	for NN in rover.population:
+	# 		mutant = copy.deepcopy(NN)
+	# 		mutant.perturb_weights(PERTURBATION)
+	# 		mutantlist.append(mutant)
+	# 	rover.population += mutantlist
 
-    # Randomly select one from each to form a team
-    team = []
-    for rover in roverDomain.rover_list:
-        team.append(random.choice(rover.population)) # Same random!!!!
+	# Randomly select one from each to form a team
+	team = []
+	for rover in roverDomain.rover_list:
+		team.append(random.choice(rover.population)) # Same random!!!!
 
-    # Evaluate Rover team, assess performance
-    evaluate_rover_team(team)
+	# Evaluate Rover team, assess performance
+	execute_episode()
 
-    # Retain k best
-    for rover in roverDomain.rover_list:
-        rover.population = remove_worst(rover.population)
+	# # Retain k best
+	# for rover in roverDomain.rover_list:
+	# 	rover.population = remove_worst(rover.population)
 
-    # Increment Gen counter
-    generation_count += 1
+	# Increment Gen counter
+	episode_count += 1
+
+
 # ==========================================================
-
-mainloop()
-

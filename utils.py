@@ -9,6 +9,9 @@ def get_angle(vect):
 def vect_sub(vect1, vect2):
     return (vect1[0] - vect2[0], vect1[1] - vect2[1])
 
+def vect_sum(vect1, vect2):
+    return (vect1[0] + vect2[0], vect1[1] + vect2[1])
+
 def check_quadrant(angle, quadrant):
     pi = math.pi
     if quadrant == 1 and (7*pi/4 < angle < 2*pi or 0 < angle < pi/4):
