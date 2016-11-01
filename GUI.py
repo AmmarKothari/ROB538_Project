@@ -5,62 +5,104 @@ from operator import attrgetter
 import time, copy
 import numpy as np
 
+# =======================================================
+# Parameters
+# =======================================================
+
+# NN Parameters
+NN_NUM_INPUT_LRS	= 8
+NN_NUM_OUTPUT_LRS	= 2
+NN_NUM_HIDDEN_LRS	= 10
+
+# Evolution parameters
+POPULATION_SIZE		= 10
+PERTURBATION		= 0.25
+EVOL_ITERATIONS		= 10
+
+# Graphics parameters
+WINDOW_TITLE		= "Rob538 Project - Rover Domain"
+ROVER_COLOR			= 'orange'
+POI_COLOR			= 'red'
+ROVER_SIZE			= 5
+POI_SIZE			= 3
+
+# World parameters
+NUM_SIM_STEPS		= 1000
+WORLD_WIDTH			= 640.0
+WORLD_HEIGHT		= 480.0
+NUM_ROVERS			= 5
+NUM_POIS			= 8
+
+# =======================================================
+# Graphics
+# =======================================================
+
+# Initialize the graphics canvas
 def init_canvas(roverDomain):
-    """Initialize the canvas"""
-    global master, w
-    master = Tk()
-    canvas_width = roverDomain.width
-    canvas_height = roverDomain.height
+	global master_window
+	global canvas
+	canvas_width = roverDomain.width
+	canvas_height = roverDomain.height
+	master_window = Tk()
+	master_window.title(WINDOW_TITLE)
+	canvas = Canvas(master_window, width=canvas_width, height=canvas_height, background='#FFFFFF')
+	canvas.pack()
 
-    master.title("Rob538 Project - Rover Domain")
-    w = Canvas(master, width=canvas_width, height=canvas_height, background='#FFFFFF')
-    w.pack()
-
+# Points for drawing agent's body
 def get_points_triangle(agent, l=5):
-    x = agent.pos[0]
-    y = agent.pos[1]
-    t = agent.heading
-    p1 = [x + l * math.sin(t), y - l * math.cos(t)]
-    p2 = [x - l * math.sin(t), y + l * math.cos(t)]
-    p3 = [x + 3 * l * math.cos(t), y + 3 * l * math.sin(t)]
-    return [p1,p2,p3]
+	x = agent.pos[0]
+	y = agent.pos[1]
+	t = agent.heading
+	p1 = [x + l * math.sin(t), y - l * math.cos(t)]
+	p2 = [x - l * math.sin(t), y + l * math.cos(t)]
+	p3 = [x + 3 * l * math.cos(t), y + 3 * l * math.sin(t)]
+	return [p1,p2,p3]
 
-def init_agents():
-    """ Initialize agents here! """
-    for i in range(3):
-        roverDomain.add_rover(180 + 20*i, 200)
+# Draw world
+def draw_world(roverDomain):
 
-    for i in range(20):
-        roverDomain.add_poi(random.randint(0, 350), random.randint(0, 470))
+	# Clearing the drawing canvas
+	canvas.delete("all")
 
-    for poi in roverDomain.poi_list:
-        poi.speed = random.randint(2, 8) / 20.0
-        poi.heading = random.randint(0, 360) / 360.0 * 2 * math.pi
+	# Drawing the rovers
+	for agent in roverDomain.rover_list:
+		obj = canvas.create_polygon(get_points_triangle(agent, l=ROVER_SIZE), fill=ROVER_COLOR)
 
-def draw_agents(roverDomain):
-    global objList
-    clear_objList()
-    objList = []
-    for agent in roverDomain.rover_list:
-        obj = w.create_polygon(get_points_triangle(agent), fill='orange')
-        objList.append(obj)
-    for poi in roverDomain.poi_list:
-        obj = w.create_polygon(get_points_triangle(poi, l=3), fill='red')
-        objList.append(obj)
-    w.update()
+	# Drawing the POIs
+	for poi in roverDomain.poi_list:
+		obj = canvas.create_polygon(get_points_triangle(poi, l=POI_SIZE), fill=POI_COLOR)
 
-def clear_objList():
-    global objList
-    for obj in objList:
-        w.delete(obj)
+	# Updating the canvas
+	canvas.update()
 
+# =======================================================
+# Simulation
+# =======================================================
+
+# Initialize world
+def init_world():
+
+	# Initializing rovers
+	for i in range(NUM_ROVERS):
+		roverDomain.add_rover(180 + 20*i, 200)
+
+	# Initializing POIs
+	for i in range(NUM_POIS):
+		roverDomain.add_poi(random.randint(0, WORLD_HEIGHT), random.randint(0, WORLD_WIDTH))
+
+	# Setting POIs initial velocities
+	for poi in roverDomain.poi_list:
+		poi.speed = random.randint(2, 8) / 20.0
+		poi.heading = random.randint(0, WORLD_HEIGHT) / WORLD_HEIGHT * 2 * math.pi
+
+# Takes a team of networks to evaluate rovers
+# Each network is given a performance value at the end
 def evaluate_rover_team(team, disp=True):
-    """Takes a team of networks to evaluate rovers, each network is given a performance value at the end"""
     avgiter = 1
     rewardsum = 0
     for n in range(avgiter):
         roverDomain.reset_agents(opts='RandomPR')
-        for i in range(simsteps):
+        for i in range(NUM_SIM_STEPS):
             for poi in roverDomain.poi_list:
                 poi.walk()
 
@@ -73,62 +115,45 @@ def evaluate_rover_team(team, disp=True):
                 NN_index += 1
 
             if disp:
-                draw_agents(roverDomain)
+                draw_world(roverDomain)
         #rewardsum += calculate_reward(catch_time, steps) # REWARD STRUCTURES COME HERE!
 
     #NN.performance = rewardsum / avgiter
 
-def pick_network_egreedy(list, epsilon=0.9):
-    """" UNUSED - With probabilty epsilon, return best network in the list. Else return random. """
-    random.shuffle(list)
-    d = random.randint(1,100)
-    if d < epsilon*100:
-        return max(list, key=attrgetter('performance'))
-    else:
-        return random.choice(list)
 
-def return_worst(list):
-    """ UNUSED """
-    random.shuffle(list)
-    worst = min(list, key=attrgetter('performance'))
-    return worst
-
+# Removing the worst performing rover
 def remove_worst(NNlist, k=None):
-    if k == None:
-        k = len(NNlist)/2
-    for i in range(k):
-        random.shuffle(NNlist)
-        worst = min(NNlist, key=attrgetter('performance'))
-        NNlist.remove(worst)
-    return NNlist
+	if k == None:
+		k = len(NNlist)/2
+	for i in range(k):
+		random.shuffle(NNlist)
+		worst = min(NNlist, key=attrgetter('performance'))
+		NNlist.remove(worst)
+	return NNlist
 
-global objList
-objList = []
-roverDomain = RoverDomain(360,480)
+roverDomain = RoverDomain(WORLD_HEIGHT,WORLD_WIDTH)
 init_canvas(roverDomain)
-init_agents()
+init_world()
 
 population = []
-population_size = 10
-perturbation = 0.25
-simsteps = 1000
-generation_count = 0
 
-# INITIALIZE <population_size> Neural Nets with 8 input, 2 output and 10 hidden units for every rover.
+# INITIALIZE <POPULATION_SIZE> Neural Nets
+# with 8 input, 2 output and 10 hidden units for every rover.
 for rover in roverDomain.rover_list:
-    for i in range(population_size):
-        NN = NeuralNet(8, 2, 10)
+    for i in range(POPULATION_SIZE):
+        NN = NeuralNet(NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
         rover.population.append(NN)
 
 # EVOLUTION ================================================
-iterations = 10
-for i in range(iterations):
+generation_count = 0
+for i in range(EVOL_ITERATIONS):
+
     # Mutate each NN to have 2k NNs
     for rover in roverDomain.rover_list:
         mutantlist = []
         for NN in rover.population:
             mutant = copy.deepcopy(NN)
-            mutant.perturb_weights(perturbation)
+            mutant.perturb_weights(PERTURBATION)
             mutantlist.append(mutant)
         rover.population += mutantlist
 
@@ -136,35 +161,17 @@ for i in range(iterations):
     team = []
     for rover in roverDomain.rover_list:
         team.append(random.choice(rover.population)) # Same random!!!!
+
     # Evaluate Rover team, assess performance
     evaluate_rover_team(team)
+
     # Retain k best
     for rover in roverDomain.rover_list:
         rover.population = remove_worst(rover.population)
+
     # Increment Gen counter
     generation_count += 1
 # ==========================================================
-
-
-# iterations = 10000
-# for i in range(iterations):
-#     for rover in roverDomain.rover_list:
-#         # PICK network using e-greedy
-#         to_mutate = pick_network_egreedy(rover.population)
-#         # MUTATE selected network
-#         mutant = copy.deepcopy(to_mutate)
-#         mutant.perturb_weights(perturbation)
-#         # USE and EVALUATE this network
-#
-#         evaluate_rovers(mutant)
-#         # REINSERT mutant
-#         rover.population.append(mutant)
-#         # REMOVE worst network
-#         worst = return_worst(rover.population)
-#         rover.population.remove(worst)
-#
-#     generation_count += 1
-#     # time.sleep(0.01)
 
 mainloop()
 
