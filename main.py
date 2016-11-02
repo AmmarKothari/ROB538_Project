@@ -11,7 +11,7 @@ NN_NUM_OUTPUT_LRS	= 2
 NN_NUM_HIDDEN_LRS	= 2
 
 # Evolution parameters
-POPULATION_SIZE		= 1
+POPULATION_SIZE		= 5
 MUTATION_STD		= 0.25
 NUM_EPISODES		= 10
 
@@ -80,14 +80,17 @@ def draw_world(simulator):
 # =======================================================
 
 # Episode execution
-def execute_episode():
+def execute_episode(self, pop_set):
 
 	# Randomizing starting positions
 	simulator.reset_agents()
 
+	# Reset performance counter
+	simulator.reset_performance(pop_set)
+
 	# Running through each simulation step
 	for i in range(NUM_SIM_STEPS):
-		simulator.sim_step()
+		simulator.sim_step(pop_set)
 		if ENABLE_GRAPHICS:
 			draw_world(simulator)
 
@@ -118,7 +121,8 @@ for i in range(NUM_EPISODES):
 
 	simulator.mutateNNs(MUTATION_STD)
 
-	execute_episode()
+	for i in range(2*POPULATION_SIZE):
+		execute_episode(i)
 
 	simulator.select()
 

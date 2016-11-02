@@ -46,8 +46,13 @@ class Simulator(object):
 			poi.set_vel_lin(random.uniform(poi_min_vel, poi_max_vel))
 
 
+	# Reset performance counter
+	def reset_performance(self, pop_set):
+		for rover in self.rover_list:
+			rover.population[pop_set].performance = 0
+
 	# Iterate the world simulation
-	def sim_step(self):
+	def sim_step(self, pop_set):
 
 		# POIs step
 		for poi in self.poi_list:
@@ -56,8 +61,8 @@ class Simulator(object):
 		# Rovers step
 		for rover in self.rover_list:
 			inputs = self.return_NN_inputs(rover)
-			rover.population[0].performance = sum(inputs[4:7])
-			outputs = rover.population[1].forward(inputs)
+			rover.population[pop_set].performance += sum(inputs[4:7])
+			outputs = rover.population[pop_set].forward(inputs)
 			rover.sim_step(outputs)
 
 
