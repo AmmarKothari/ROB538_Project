@@ -1,134 +1,120 @@
 from Tkinter import *
 from RoverDomain import *
-from NN_Unsupervised import NeuralNet
-from operator import attrgetter
-import time, copy
+import time
 import numpy as np
 
-def init_canvas(roverDomain):
-    """Initializes the canvas, draws pause button"""
-    global master, w
-    master = Tk()
-    canvas_width = roverDomain.width
-    canvas_height = roverDomain.height
+# =======================================================
+# Parameters
+# =======================================================
 
-    master.title("Rob538 Project - Rover Domain")
-    w = Canvas(master, width=canvas_width, height=canvas_height, background='#FFFFFF')
-    w.pack()
+# NN Parameters
+NN_NUM_INPUT_LRS	= 8
+NN_NUM_OUTPUT_LRS	= 2
+NN_NUM_HIDDEN_LRS	= 10
 
+# Evolution parameters
+POPULATION_SIZE		= 15
+PERTURBATION		= 0.25
+NUM_EPISODES		= 10
+
+# Graphics parameters
+WINDOW_TITLE		= "Rob538 Project - Rover Domain"
+BKG_COLOR			= 'white'
+ROVER_COLOR			= 'orange'
+POI_COLOR			= 'red'
+ROVER_SIZE			= 5
+POI_SIZE			= 3
+DRAW				= 1
+
+# World parameters
+NUM_SIM_STEPS		= 1000
+WORLD_WIDTH			= 640.0
+WORLD_HEIGHT		= 480.0
+NUM_ROVERS			= 5
+NUM_POIS			= 8
+POI_MIN_VEL			= 0.1
+POI_MAX_VEL			= 0.4
+MIN_SENSOR_DIST		= 10
+MAX_SENSOR_DIST		= 500
+
+# =======================================================
+# Graphics
+# =======================================================
+
+# Initialize the graphics canvas
+def init_canvas():
+	global master_window
+	global canvas
+	master_window = Tk()
+	master_window.title(WINDOW_TITLE)
+	canvas = Canvas(master_window, width=WORLD_WIDTH, height=WORLD_HEIGHT, background=BKG_COLOR)
+	canvas.pack()
+
+# Points for drawing agent's body
 def get_points_triangle(agent, l=5):
-    x = agent.pos[0]
-    y = agent.pos[1]
-    t = agent.heading
-    p1 = [x + l * math.sin(t), y - l * math.cos(t)]
-    p2 = [x - l * math.sin(t), y + l * math.cos(t)]
-    p3 = [x + 3 * l * math.cos(t), y + 3 * l * math.sin(t)]
-    return [p1,p2,p3]
+	x = agent.pos[0]
+	y = agent.pos[1]
+	t = agent.heading
+	p1 = [x + l * math.sin(t), y - l * math.cos(t)]
+	p2 = [x - l * math.sin(t), y + l * math.cos(t)]
+	p3 = [x + 3 * l * math.cos(t), y + 3 * l * math.sin(t)]
+	return [p1,p2,p3]
 
-def init_agents():
+# Draw world
+def draw_world(roverDomain):
 
-    roverDomain.add_rover(180, 200, heading=math.pi / 4)
+	# Clearing the drawing canvas
+	canvas.delete("all")
 
-    for i in range(20):
-        roverDomain.add_poi(random.randint(0, 350), random.randint(0, 470))
+	# Drawing the rovers
+	for agent in roverDomain.rover_list:
+		canvas.create_polygon(get_points_triangle(agent, l=ROVER_SIZE), fill=ROVER_COLOR)
 
-    for poi in roverDomain.poi_list:
-        poi.speed = random.randint(2, 8) / 20.0
-        poi.heading = random.randint(0, 360) / 360.0 * 2 * math.pi
+	# Drawing the POIs
+	for poi in roverDomain.poi_list:
+		canvas.create_polygon(get_points_triangle(poi, l=POI_SIZE), fill=POI_COLOR)
 
-def draw_agents(roverDomain):
-    global objList
-    clear_objList()
-    objList = []
-    for agent in roverDomain.rover_list:
-        obj = w.create_polygon(get_points_triangle(agent), fill='orange')
-        objList.append(obj)
-    for poi in roverDomain.poi_list:
-        obj = w.create_polygon(get_points_triangle(poi, l=3), fill='red')
-        objList.append(obj)
-    w.update()
+	# Updating the canvas
+	canvas.update()
 
-def clear_objList():
-    global objList
-    for obj in objList:
-        w.delete(obj)
+# =======================================================
+# Simulation
+# =======================================================
 
-def evaluate_rover(rover, disp=True):
-    avgiter = 1
-    # rewardsum = 0
-    for n in range(avgiter):
-        # reset_agents(opts='randompr')
-        for i in range(simsteps):
-            # X = np.array(pr1.return_obj_direction(b1))
-            # yHat = NN.forward(X)
-            # rover.walk(yHat)
-            for poi in roverDomain.poi_list:
-                poi.walk()
+# Takes a team of networks to evaluate rovers
+# Each network is given a performance value at the end
+def execute_episode():
 
-            if disp:
-                draw_agents(roverDomain)
+	# Randomizing starting positions
+	roverDomain.reset_agents()
 
-            # if pr1.pos == b1.pos:
-            #     catches += 1
-            #     # print "CAUGHT IT!"
-            #     catch_time = i
-            #     break
+	# Running through each simulation step
+	for i in range(NUM_SIM_STEPS):
+		roverDomain.sim_step()
+		if DRAW:
+			draw_world(roverDomain)
 
-        # rewardsum += calculate_reward(catch_time, steps)
-    #
-    # NN.performance = rewardsum / avgiter
-    # print NN.performance, catches
 
-def pick_network_egreedy(list, epsilon=0.9):
-    """" With probabilty epsilon, return best network in the list. Else return random. """
-    random.shuffle(list)
-    d = random.randint(1,100)
-    if d < epsilon*100:
-        return max(list, key=attrgetter('performance'))
-    else:
-        return random.choice(list)
+# =======================================================
+# Main code
+# =======================================================
 
-def return_worst(list):
-    random.shuffle(list)
-    worst = min(list, key=attrgetter('performance'))
-    return worst
+init_canvas()
+roverDomain = RoverDomain(MIN_SENSOR_DIST, MAX_SENSOR_DIST, NUM_ROVERS, NUM_POIS, WORLD_WIDTH, WORLD_HEIGHT)
+roverDomain.init_world(POI_MIN_VEL, POI_MAX_VEL)
+roverDomain.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
 
-global objList
-objList = []
-roverDomain = RoverDomain(360,480)
-init_canvas(roverDomain)
-init_agents()
+episode_count = 0
+for i in range(NUM_EPISODES):
 
-population = []
-population_size = 10
-perturbation = 0.25
-simsteps = 100
-generation_count = 0
+	print "Episode %d" % episode_count
 
-# INITIALIZE <population_size> Neural Nets with 8 input, 2 output and 10 hidden units for every rover.
-for rover in roverDomain.rover_list:
-    for i in range(population_size):
-        NN = NeuralNet(8, 2, 10)
-        rover.population.append(NN)
+	# Evaluate Rover team, assess performance
+	execute_episode()
 
-iterations = 10000
-for i in range(iterations):
-    for rover in roverDomain.rover_list:
-        # PICK network using e-greedy
-        to_mutate = pick_network_egreedy(rover.population)
-        # MUTATE selected network
-        mutant = copy.deepcopy(to_mutate)
-        mutant.perturb_weights(perturbation)
-        # USE and EVALUATE this network
-        evaluate_rover(mutant)
-        # REINSERT mutant
-        rover.population.append(mutant)
-        # REMOVE worst network
-        worst = return_worst(rover.population)
-        rover.population.remove(worst)
+	roverDomain.select()
 
-    generation_count += 1
-    # time.sleep(0.01)
+	roverDomain.mutateNNs(PERTURBATION)
 
-mainloop()
-
+	# Increment episode counter
+	episode_count += 1

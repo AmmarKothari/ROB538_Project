@@ -4,10 +4,13 @@ def get_norm(vect):
     return (vect[0] ** 2 + vect[1] ** 2) ** 0.5
 
 def get_angle(vect):
-    return math.atan2(vect[1], vect[0])
+    return math.atan2(vect[1], vect[0]) % (2 * math.pi) 
 
 def vect_sub(vect1, vect2):
     return (vect1[0] - vect2[0], vect1[1] - vect2[1])
+
+def vect_sum(vect1, vect2):
+    return (vect1[0] + vect2[0], vect1[1] + vect2[1])
 
 def check_quadrant(angle, quadrant):
     pi = math.pi
