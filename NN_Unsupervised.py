@@ -1,6 +1,4 @@
 import numpy as np
-import random
-import math
 
 class NeuralNet(object):
 
@@ -9,15 +7,8 @@ class NeuralNet(object):
 		self.outputLayerSize = outputLayers
 		self.hiddenLayerSize = hiddenLayers+1
 		self.performance = 0
-
-		self.W1 = np.zeros((self.inputLayerSize,self.hiddenLayerSize))
-		self.W2 = np.zeros((self.hiddenLayerSize,self.outputLayerSize))
-
-		for i in range(len(self.W1)):
-			self.W1[i] = random.gauss(0.0,1.0)
-
-		for i in range(len(self.W2)):
-			self.W2[i] = random.gauss(0.0,1.0)
+		self.W1 = np.random.normal(loc =0.0, scale =1.0, size=(self.inputLayerSize,self.hiddenLayerSize))
+		self.W2 = np.random.normal(loc =0.0, scale =1.0, size=(self.hiddenLayerSize,self.outputLayerSize))
 
 	def forward(self, X):
 
@@ -42,17 +33,12 @@ class NeuralNet(object):
 		return 1/(1 + np.exp(-z))-0.5
 
 	def perturb_weights(self, mutation_std):
-
-		for w in self.W1:
-			w = random.gauss(w,mutation_std)
-
-		for w in self.W2:
-			w = random.gauss(w,mutation_std)
+		self.W1 = np.random.normal(loc =self.W1, scale =mutation_std, size=(self.inputLayerSize,self.hiddenLayerSize))
+		self.W2 = np.random.normal(loc =self.W2, scale =mutation_std, size=(self.hiddenLayerSize,self.outputLayerSize))
 
 	def store_weights(self, filename):
 		np.savetxt(filename+"W1", self.W1, delimiter=',')
 		np.savetxt(filename+"W2", self.W2, delimiter=',')
-		print self.W1
 
 	def load_weights(self, filename):
 		self.W1 = np.loadtxt(filename+"W1", delimiter=',')

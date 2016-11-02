@@ -11,10 +11,10 @@ NN_WEIGHTS_FILENAME	= "NN_"
 # NN Parameters
 NN_NUM_INPUT_LRS	= 8
 NN_NUM_OUTPUT_LRS	= 2
-NN_NUM_HIDDEN_LRS	= 3
+NN_NUM_HIDDEN_LRS	= 1
 
 # Evolution parameters
-POPULATION_SIZE		= 3
+POPULATION_SIZE		= 10
 MUTATION_STD		= 0.25
 NUM_GENERATIONS		= 10
 
@@ -25,7 +25,7 @@ ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
-ENABLE_GRAPHICS		= 0	# Enabling graphics will load NNs from file
+ENABLE_GRAPHICS		= 1	# Enabling graphics will load NNs from file
 
 # World parameters
 NUM_SIM_STEPS		= 1000
@@ -141,19 +141,18 @@ else:	# Evolving new NNs
 		for j in range(2*POPULATION_SIZE):
 			execute_episode(j)
 
-		# Printing overall performance of each NN for each rover
-		for j in range(NUM_ROVERS):
-			performance_list = simulator.get_performance(j)
-			performance_list.sort()
-			print "Rover %d:" % j,
-			for p in performance_list:
-				print "%.3f " % p,
-			print ""
+		# Selecting best weights
+		simulator.select()
 
 		#  Storing NNs weights for later execution/visualization
 		simulator.store_bestWeights(NN_WEIGHTS_FILENAME)
 
-		# Selecting best weights
-		simulator.select()
+		# Printing overall performance of each NN for each rover
+		for j in range(NUM_ROVERS):
+			performance_list = simulator.get_performance(j)
+			print "Rover %d:" % j,
+			for p in performance_list:
+				print "%.3f " % p,
+			print ""
 
 		generation_count += 1

@@ -67,8 +67,7 @@ class Simulator(object):
 	# Storing NN weights
 	def store_bestWeights(self, filename):
 		for i in range(self.num_rovers):
-			best = max(self.rover_list[i].population, key=attrgetter('performance'))
-			best.store_weights(filename+"R"+str(i)+"_")
+			self.rover_list[i].population[-1].store_weights(filename+"R"+str(i)+"_")
 
 	# Iterate the world simulation
 	def sim_step(self, pop_set):
@@ -98,7 +97,7 @@ class Simulator(object):
 			mutantlist = []
 			for nn in rover.population:
 				mutant = copy.deepcopy(nn)
-				mutant.perturb_weights(mutation_std)
+				# mutant.perturb_weights(mutation_std)
 				mutantlist.append(mutant)
 			rover.population += mutantlist
 
