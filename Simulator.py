@@ -5,11 +5,20 @@ from NN_Unsupervised import NeuralNet
 from operator import attrgetter
 import copy
 
-class RoverDomain(object):
-
+# =======================================================
+# Simulator
+# =======================================================
+class Simulator(object):
 
 	# Constructor
-	def __init__(self, min_sensor_dist, max_sensor_dist, num_rovers, num_pois, world_width=240, world_height=240):
+	def __init__(self,
+		min_sensor_dist,
+		max_sensor_dist,
+		num_rovers,
+		num_pois,
+		world_width,
+		world_height):
+
 		self.min_sensor_dist	= min_sensor_dist
 		self.max_sensor_dist	= max_sensor_dist
 		self.num_rovers			= num_rovers
@@ -49,6 +58,7 @@ class RoverDomain(object):
 			inputs = self.return_NN_inputs(rover)
 			outputs = random.choice(rover.population).forward(inputs)
 			rover.sim_step(outputs)
+
 
 	# Initialize NNs for each rover
 	def initRoverNNs(self, pop_size, inputLayers, outputLayers, hiddenLayers):
@@ -163,8 +173,14 @@ class RoverDomain(object):
 			inputs.append(self.return_sensor(self.poi_list, i, rover))
 
 		return inputs
+# =======================================================
+# =======================================================
 
+
+
+# =======================================================
 # General agent that models POIs and rovers
+# =======================================================
 class Agent(object):
 
 	# Constructor
@@ -208,8 +224,14 @@ class Agent(object):
 		# Check top-bottom wall collisions
 		if self.pos[1] > world_height or self.pos[1] < 0:
 			self.set_heading((2*math.pi - self.heading) % (math.pi * 2))
+# =======================================================
+# =======================================================
 
+
+
+# =======================================================
 # POI agent
+# =======================================================
 class Poi(Agent):
 	def __init__(self, posx, posy, heading, value):
 		Agent.__init__(self, posx, posy, heading, value)
@@ -219,8 +241,14 @@ class Poi(Agent):
 		self.update_heading();
 		self.update_pos();
 		self.bounce_walls(world_width, world_height)
+# =======================================================
+# =======================================================
 
+
+
+# =======================================================
 # Rover agent
+# =======================================================
 class Rover(Agent):
 
 	def __init__(self, posx, posy, heading):
@@ -233,3 +261,5 @@ class Rover(Agent):
 		self.set_vel_lin(nn_outputs[1])
 		self.update_heading();
 		self.update_pos();
+# =======================================================
+# =======================================================

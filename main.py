@@ -1,7 +1,5 @@
 from Tkinter import *
-from RoverDomain import *
-import time
-import numpy as np
+from Simulator import *
 
 # =======================================================
 # Parameters
@@ -24,7 +22,7 @@ ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
-DRAW				= 1
+ENABLE_GRAPHICS				= 1
 
 # World parameters
 NUM_SIM_STEPS		= 1000
@@ -61,17 +59,17 @@ def get_points_triangle(agent, l=5):
 	return [p1,p2,p3]
 
 # Draw world
-def draw_world(roverDomain):
+def draw_world(simulator):
 
 	# Clearing the drawing canvas
 	canvas.delete("all")
 
 	# Drawing the rovers
-	for agent in roverDomain.rover_list:
+	for agent in simulator.rover_list:
 		canvas.create_polygon(get_points_triangle(agent, l=ROVER_SIZE), fill=ROVER_COLOR)
 
 	# Drawing the POIs
-	for poi in roverDomain.poi_list:
+	for poi in simulator.poi_list:
 		canvas.create_polygon(get_points_triangle(poi, l=POI_SIZE), fill=POI_COLOR)
 
 	# Updating the canvas
@@ -81,40 +79,47 @@ def draw_world(roverDomain):
 # Simulation
 # =======================================================
 
-# Takes a team of networks to evaluate rovers
-# Each network is given a performance value at the end
+# Episode execution
 def execute_episode():
 
 	# Randomizing starting positions
-	roverDomain.reset_agents()
+	simulator.reset_agents()
 
 	# Running through each simulation step
 	for i in range(NUM_SIM_STEPS):
-		roverDomain.sim_step()
-		if DRAW:
-			draw_world(roverDomain)
+		simulator.sim_step()
+		if ENABLE_GRAPHICS:
+			draw_world(simulator)
 
 
 # =======================================================
 # Main code
 # =======================================================
 
-init_canvas()
-roverDomain = RoverDomain(MIN_SENSOR_DIST, MAX_SENSOR_DIST, NUM_ROVERS, NUM_POIS, WORLD_WIDTH, WORLD_HEIGHT)
-roverDomain.init_world(POI_MIN_VEL, POI_MAX_VEL)
-roverDomain.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
+if ENABLE_GRAPHICS:
+	init_canvas()
+
+simulator = Simulator(
+		min_sensor_dist 	= MIN_SENSOR_DIST,
+		max_sensor_dist 	= MAX_SENSOR_DIST,
+		num_rovers 			= NUM_ROVERS,
+		num_pois 			= NUM_POIS,
+		world_width 		= WORLD_WIDTH,
+		world_height 		= WORLD_HEIGHT)
+
+simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
+
+simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
 
 episode_count = 0
 for i in range(NUM_EPISODES):
 
 	print "Episode %d" % episode_count
 
-	# Evaluate Rover team, assess performance
 	execute_episode()
 
-	roverDomain.select()
+	simulator.select()
 
-	roverDomain.mutateNNs(PERTURBATION)
+	simulator.mutateNNs(PERTURBATION)
 
-	# Increment episode counter
 	episode_count += 1
