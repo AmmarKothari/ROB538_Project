@@ -28,7 +28,7 @@ ENABLE_GRAPHICS		= 0
 NUM_SIM_STEPS		= 500
 WORLD_WIDTH			= 640.0
 WORLD_HEIGHT		= 480.0
-NUM_ROVERS			= 3
+NUM_ROVERS			= 1
 NUM_POIS			= 5
 POI_MIN_VEL			= 0.1
 POI_MAX_VEL			= 0.4
@@ -117,12 +117,15 @@ simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_
 generation_count = 0
 for i in range(NUM_GENERATIONS):
 
+	# Generate twice as many NNs doing mutated copies
 	simulator.mutateNNs(MUTATION_STD)
 
+	# Running an episode for each population member
 	for i in range(2*POPULATION_SIZE):
 		print "Generation %d, Population set %d" % (generation_count, i)
 		execute_episode(i)
 
+	# Printing overall performance of each NN for each rover
 	for i in range(NUM_ROVERS):
 		print "Rover %d:" % i,
 		performance_list = simulator.get_performance(i)
