@@ -172,6 +172,7 @@ class Simulator(object):
 		for i in range(4):
 			inputs.append(self.measure_sensor(self.poi_list, i, rover))
 
+
 		return inputs
 # =======================================================
 # =======================================================
@@ -257,7 +258,7 @@ class Rover(Agent):
 
 	# Simulation step for the rovers
 	def sim_step(self, nn_outputs):
-		self.vel_ang = nn_outputs[0]
+		self.vel_ang = 0.1*nn_outputs[0]
 		self.set_vel_lin(nn_outputs[1])
 		self.update_heading();
 		self.update_pos();

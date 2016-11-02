@@ -1,32 +1,45 @@
 import numpy as np
 import random
+import math
 
 class NeuralNet(object):
 
 	def __init__(self, inputLayers, outputLayers, hiddenLayers):
-		self.inputLayerSize = inputLayers
+		self.inputLayerSize = inputLayers+1
 		self.outputLayerSize = outputLayers
-		self.hiddenLayerSize = hiddenLayers
+		self.hiddenLayerSize = hiddenLayers+1
 		self.performance = 0
 
 		self.W1 = np.zeros((self.inputLayerSize,self.hiddenLayerSize))
 		self.W2 = np.zeros((self.hiddenLayerSize,self.outputLayerSize))
 
-		for w in self.W1:
-			w = random.gauss(0.0,1.0)
+		for i in range(len(self.W1)):
+			self.W1[i] = random.gauss(0.0,1.0)
 
-		for w in self.W2:
-			w = random.gauss(0.0,1.0)
+		for i in range(len(self.W2)):
+			self.W2[i] = random.gauss(0.0,1.0)
 
 	def forward(self, X):
+
+		# Bias input
+		X.append(1)
+
+		# Input weighting 
 		self.z2 = np.dot(X, self.W1)
+
+		# Sigmoid activation function
 		self.a2 = self.sigmoid(self.z2)
-		self.z3 = np.dot(self.a2, self.W2)
-		yHat = self.sigmoid(self.z3)
+
+		# Bias on hidden layer
+		np.append(self.a2,1)
+
+		# Output weighting 
+		yHat = np.dot(self.a2, self.W2)
+
 		return yHat
 
 	def sigmoid(self, z):
-		return 1/(1 + np.exp(-z))
+		return 1/(1 + np.exp(-z))-0.5
 
 	def perturb_weights(self, mutation_std):
 

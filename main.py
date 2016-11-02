@@ -8,7 +8,7 @@ from Simulator import *
 # NN Parameters
 NN_NUM_INPUT_LRS	= 8
 NN_NUM_OUTPUT_LRS	= 2
-NN_NUM_HIDDEN_LRS	= 10
+NN_NUM_HIDDEN_LRS	= 2
 
 # Evolution parameters
 POPULATION_SIZE		= 1
