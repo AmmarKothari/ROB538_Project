@@ -13,7 +13,7 @@ NN_NUM_HIDDEN_LRS	= 2
 # Evolution parameters
 POPULATION_SIZE		= 5
 MUTATION_STD		= 0.25
-NUM_EPISODES		= 10
+NUM_GENERATIONS		= 10
 
 # Graphics parameters
 WINDOW_TITLE		= "Rob538 Project - Rover Domain"
@@ -80,7 +80,7 @@ def draw_world(simulator):
 # =======================================================
 
 # Episode execution
-def execute_episode(self, pop_set):
+def execute_episode(pop_set):
 
 	# Randomizing starting positions
 	simulator.reset_agents()
@@ -114,16 +114,15 @@ simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
 
 simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
 
-episode_count = 0
-for i in range(NUM_EPISODES):
-
-	print "Episode %d" % episode_count
+generation_count = 0
+for i in range(NUM_GENERATIONS):
 
 	simulator.mutateNNs(MUTATION_STD)
 
 	for i in range(2*POPULATION_SIZE):
+		print "Generation %d, Population set %d" % (generation_count, i)
 		execute_episode(i)
 
 	simulator.select()
 
-	episode_count += 1
+	generation_count += 1
