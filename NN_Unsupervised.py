@@ -49,4 +49,17 @@ class NeuralNet(object):
 		for w in self.W2:
 			w = random.gauss(w,mutation_std)
 
+	def store_weights(self, filename):
+		np.savetxt(filename+"W1", self.W1, delimiter=',')
+		np.savetxt(filename+"W2", self.W2, delimiter=',')
+		print self.W1
+		# print self.W2
+
+	def load_weights(self, filename):
+		self.W1 = np.loadtxt(filename+"W1", delimiter=',')
+		self.W2 = np.loadtxt(filename+"W2", delimiter=',')
+
+
+
+
 """IMPORTANT! Scale your inputs to 0-1"""

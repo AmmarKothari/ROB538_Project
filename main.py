@@ -5,10 +5,13 @@ from Simulator import *
 # Parameters
 # =======================================================
 
+# File Parameters
+NN_WEIGHTS_FILENAME	= "NN_"
+
 # NN Parameters
 NN_NUM_INPUT_LRS	= 8
 NN_NUM_OUTPUT_LRS	= 2
-NN_NUM_HIDDEN_LRS	= 2
+NN_NUM_HIDDEN_LRS	= 3
 
 # Evolution parameters
 POPULATION_SIZE		= 3
@@ -22,22 +25,23 @@ ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
-ENABLE_GRAPHICS		= 0
+ENABLE_GRAPHICS		= 1
 
 # World parameters
-NUM_SIM_STEPS		= 500
-WORLD_WIDTH			= 640.0
-WORLD_HEIGHT		= 480.0
+NUM_SIM_STEPS		= 1000
+WORLD_WIDTH			= 240.0
+WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
-NUM_POIS			= 5
-POI_MIN_VEL			= 0.1
-POI_MAX_VEL			= 0.4
+NUM_POIS			= 10
+POI_MIN_VEL			= 0.01
+POI_MAX_VEL			= 0.05
 MIN_SENSOR_DIST		= 10
 MAX_SENSOR_DIST		= 500
 
 # =======================================================
 # Graphics
 # =======================================================
+
 
 # Initialize the graphics canvas
 def init_canvas():
@@ -114,26 +118,34 @@ simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
 
 simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
 
-generation_count = 0
-for i in range(NUM_GENERATIONS):
+if ENABLE_GRAPHICS:
+	simulator.load_bestWeights(NN_WEIGHTS_FILENAME)
+	for i in range(NUM_GENERATIONS):
+		execute_episode(0)
+else:
 
-	# Generate twice as many NNs doing mutated copies
-	simulator.mutateNNs(MUTATION_STD)
+	generation_count = 0
+	for i in range(NUM_GENERATIONS):
 
-	# Running an episode for each population member
-	for i in range(2*POPULATION_SIZE):
-		print "Generation %d, Population set %d" % (generation_count, i)
-		execute_episode(i)
+		# Generate twice as many NNs doing mutated copies
+		simulator.mutateNNs(MUTATION_STD)
 
-	# Printing overall performance of each NN for each rover
-	for i in range(NUM_ROVERS):
-		print "Rover %d:" % i,
-		performance_list = simulator.get_performance(i)
-		performance_list.sort()
-		for p in performance_list:
-			print "%.3f " % p,
-		print ""
+		# Running an episode for each population member
+		for j in range(2*POPULATION_SIZE):
+			# print "Generation %d, Population set %d" % (generation_count, i)
+			execute_episode(j)
 
-	simulator.select()
+		# Printing overall performance of each NN for each rover
+		for j in range(NUM_ROVERS):
+			print "Rover %d:" % j,
+			performance_list = simulator.get_performance(j)
+			performance_list.sort()
+			for p in performance_list:
+				print "%.3f " % p,
+			print ""
 
-	generation_count += 1
+		simulator.store_bestWeights(NN_WEIGHTS_FILENAME)
+
+		simulator.select()
+
+		generation_count += 1

@@ -58,6 +58,18 @@ class Simulator(object):
 			performance.append(nn.performance)
 		return performance
 
+	# Loading NN weights
+	def load_bestWeights(self, filename):
+		for i in range(self.num_rovers):
+			for nn in self.rover_list[i].population:
+				nn.load_weights(filename+"R"+str(i)+"_")
+
+	# Storing NN weights
+	def store_bestWeights(self, filename):
+		for i in range(self.num_rovers):
+			best = max(self.rover_list[i].population, key=attrgetter('performance'))
+			best.store_weights(filename+"R"+str(i)+"_")
+
 	# Iterate the world simulation
 	def sim_step(self, pop_set):
 
@@ -270,7 +282,7 @@ class Rover(Agent):
 
 	# Simulation step for the rovers
 	def sim_step(self, nn_outputs):
-		self.vel_ang = 0.1*nn_outputs[0]
+		self.vel_ang = 0.05*nn_outputs[0]
 		self.set_vel_lin(nn_outputs[1])
 		self.update_heading();
 		self.update_pos();
