@@ -12,7 +12,7 @@ NN_NUM_HIDDEN_LRS	= 10
 
 # Evolution parameters
 POPULATION_SIZE		= 15
-PERTURBATION		= 0.25
+MUTATION_STD		= 0.25
 NUM_EPISODES		= 10
 
 # Graphics parameters
@@ -120,6 +120,6 @@ for i in range(NUM_EPISODES):
 
 	simulator.select()
 
-	simulator.mutateNNs(PERTURBATION)
+	simulator.mutateNNs(MUTATION_STD)
 
 	episode_count += 1

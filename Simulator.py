@@ -68,12 +68,12 @@ class Simulator(object):
 
 
 	# Initialize NNs for each rover
-	def mutateNNs(self, perturbation):
+	def mutateNNs(self, mutation_std):
 		for rover in self.rover_list:
 			mutantlist = []
 			for nn in rover.population:
 				mutant = copy.deepcopy(nn)
-				mutant.perturb_weights(perturbation)
+				mutant.perturb_weights(mutation_std)
 				mutantlist.append(mutant)
 			rover.population += mutantlist
 
