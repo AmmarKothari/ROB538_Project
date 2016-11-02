@@ -56,7 +56,8 @@ class Simulator(object):
 		# Rovers step
 		for rover in self.rover_list:
 			inputs = self.return_NN_inputs(rover)
-			outputs = random.choice(rover.population).forward(inputs)
+			rover.population[0].performance = sum(inputs[4:7])
+			outputs = rover.population[1].forward(inputs)
 			rover.sim_step(outputs)
 
 
@@ -77,7 +78,6 @@ class Simulator(object):
 				mutantlist.append(mutant)
 			rover.population += mutantlist
 
-
 	# Selecting best NNs
 	def select(self):
 
@@ -91,7 +91,7 @@ class Simulator(object):
 		if k == None:
 			k = len(nn_list)/2
 		for i in range(k):
-			random.shuffle(nn_list)
+			# random.shuffle(nn_list)
 			worst = min(nn_list, key=attrgetter('performance'))
 			nn_list.remove(worst)
 		return nn_list
@@ -118,7 +118,7 @@ class Simulator(object):
 			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
 
 	# Computing sensor measurement
-	def return_sensor(self, agentList, quadrant, rover):
+	def measure_sensor(self, agentList, quadrant, rover):
 		sum = 0
 		for agent in agentList:
 			vect = utils.vect_sub(agent.pos, rover.pos)
@@ -166,11 +166,11 @@ class Simulator(object):
 
 		# Sensing rovers
 		for i in range(4):
-			inputs.append(self.return_sensor(self.rover_list, i, rover))
+			inputs.append(self.measure_sensor(self.rover_list, i, rover))
 
 		# Sensing POIs
 		for i in range(4):
-			inputs.append(self.return_sensor(self.poi_list, i, rover))
+			inputs.append(self.measure_sensor(self.poi_list, i, rover))
 
 		return inputs
 # =======================================================

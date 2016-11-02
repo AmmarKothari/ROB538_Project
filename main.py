@@ -11,7 +11,7 @@ NN_NUM_OUTPUT_LRS	= 2
 NN_NUM_HIDDEN_LRS	= 10
 
 # Evolution parameters
-POPULATION_SIZE		= 15
+POPULATION_SIZE		= 1
 MUTATION_STD		= 0.25
 NUM_EPISODES		= 10
 
@@ -116,10 +116,10 @@ for i in range(NUM_EPISODES):
 
 	print "Episode %d" % episode_count
 
+	simulator.mutateNNs(MUTATION_STD)
+
 	execute_episode()
 
 	simulator.select()
-
-	simulator.mutateNNs(MUTATION_STD)
 
 	episode_count += 1
