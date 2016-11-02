@@ -51,6 +51,14 @@ class Simulator(object):
 		for rover in self.rover_list:
 			rover.population[pop_set].performance = 0
 
+	# Reset performance counter
+	def get_performance(self):
+		performance = []
+		for rover in self.rover_list:
+			for nn in rover.population:
+				print nn.performance
+			print " "
+
 	# Iterate the world simulation
 	def sim_step(self, pop_set):
 

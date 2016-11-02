@@ -22,7 +22,7 @@ ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
-ENABLE_GRAPHICS				= 1
+ENABLE_GRAPHICS		= 0
 
 # World parameters
 NUM_SIM_STEPS		= 1000
@@ -123,6 +123,8 @@ for i in range(NUM_GENERATIONS):
 		print "Generation %d, Population set %d" % (generation_count, i)
 		execute_episode(i)
 
+	simulator.get_performance()
+	
 	simulator.select()
 
 	generation_count += 1
