@@ -11,7 +11,7 @@ NN_NUM_OUTPUT_LRS	= 2
 NN_NUM_HIDDEN_LRS	= 2
 
 # Evolution parameters
-POPULATION_SIZE		= 5
+POPULATION_SIZE		= 3
 MUTATION_STD		= 0.25
 NUM_GENERATIONS		= 10
 
@@ -25,11 +25,11 @@ POI_SIZE			= 3
 ENABLE_GRAPHICS		= 0
 
 # World parameters
-NUM_SIM_STEPS		= 1000
+NUM_SIM_STEPS		= 500
 WORLD_WIDTH			= 640.0
 WORLD_HEIGHT		= 480.0
-NUM_ROVERS			= 5
-NUM_POIS			= 8
+NUM_ROVERS			= 3
+NUM_POIS			= 5
 POI_MIN_VEL			= 0.1
 POI_MAX_VEL			= 0.4
 MIN_SENSOR_DIST		= 10
@@ -123,8 +123,14 @@ for i in range(NUM_GENERATIONS):
 		print "Generation %d, Population set %d" % (generation_count, i)
 		execute_episode(i)
 
-	simulator.get_performance()
-	
+	for i in range(NUM_ROVERS):
+		print "Rover %d:" % i,
+		performance_list = simulator.get_performance(i)
+		performance_list.sort()
+		for p in performance_list:
+			print "%.3f " % p,
+		print ""
+
 	simulator.select()
 
 	generation_count += 1
