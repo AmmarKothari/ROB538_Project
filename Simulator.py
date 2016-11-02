@@ -109,15 +109,12 @@ class Simulator(object):
 		for rover in self.rover_list:
 			rover.population = self.remove_worst(rover.population)
 
-
 	# Removing the worst performing rover
 	def remove_worst(self, nn_list, k=None):
 		if k == None:
 			k = len(nn_list)/2
-		for i in range(k):
-			# random.shuffle(nn_list)
-			worst = min(nn_list, key=attrgetter('performance'))
-			nn_list.remove(worst)
+		nn_list = sorted(nn_list, key=attrgetter('performance'))
+		del nn_list[:k]
 		return nn_list
 
 	# Registering new POI
@@ -159,14 +156,14 @@ class Simulator(object):
                 count = np.zeros(4)
                 for poi in poiList:
 
-                    #get quarant of POI
+                    # get quadrant of POI
                     vect = utils.vect_sub(poi.pos, self.pos)
                     dist = utils.get_norm(vect)
                     angle = utils.get_angle(vect) % (2*math.pi ) # Between 0 to 2pi
                     relative_angle = (angle - self.heading + math.pi/2) % (2*math.pi)
                     q = utils.get_quadrant(relative_angle) - 1
                     
-                    #get relative velocity of POI to agent.
+                    # get relative velocity of POI to agent.
                     poi_vel_vect = np.array([math.cos(poi.heading), math.sin(poi.heading)])*poi.speed
                     rover_vel_vect = np.array([math.cos(self.heading), math.sin(self.heading)])*self.speed
                     rel_vel_vect = rover_vel_vect - poi_vel_vect
@@ -176,7 +173,7 @@ class Simulator(object):
                         rel_vel_vect[0] *= -1
 
                     
-                    #update average velocity vector
+                    # update average velocity vector
                     count[q] += 1
                     sum[q][0] = (sum[q][0] * (count[q] - 1) + rel_vel_vect[0]) / count[q]
                     sum[q][1] = (sum[q][1] * (count[q] - 1) + rel_vel_vect[1]) / count[q]

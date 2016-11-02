@@ -25,7 +25,7 @@ ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
-ENABLE_GRAPHICS		= 1
+ENABLE_GRAPHICS		= 0	# Enabling graphics will load NNs from file
 
 # World parameters
 NUM_SIM_STEPS		= 1000
@@ -118,34 +118,42 @@ simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
 
 simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
 
-if ENABLE_GRAPHICS:
+if ENABLE_GRAPHICS: # Visualizing results
+
+	# Loading best weights for each robot
 	simulator.load_bestWeights(NN_WEIGHTS_FILENAME)
+
+	# Running NUM_GENERATIONS times
 	for i in range(NUM_GENERATIONS):
 		execute_episode(0)
-else:
+
+else:	# Evolving new NNs
 
 	generation_count = 0
 	for i in range(NUM_GENERATIONS):
+		
+		print "Generation %d" % generation_count
 
 		# Generate twice as many NNs doing mutated copies
 		simulator.mutateNNs(MUTATION_STD)
 
 		# Running an episode for each population member
 		for j in range(2*POPULATION_SIZE):
-			# print "Generation %d, Population set %d" % (generation_count, i)
 			execute_episode(j)
 
 		# Printing overall performance of each NN for each rover
 		for j in range(NUM_ROVERS):
-			print "Rover %d:" % j,
 			performance_list = simulator.get_performance(j)
 			performance_list.sort()
+			print "Rover %d:" % j,
 			for p in performance_list:
 				print "%.3f " % p,
 			print ""
 
+		#  Storing NNs weights for later execution/visualization
 		simulator.store_bestWeights(NN_WEIGHTS_FILENAME)
 
+		# Selecting best weights
 		simulator.select()
 
 		generation_count += 1

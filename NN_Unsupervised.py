@@ -53,7 +53,6 @@ class NeuralNet(object):
 		np.savetxt(filename+"W1", self.W1, delimiter=',')
 		np.savetxt(filename+"W2", self.W2, delimiter=',')
 		print self.W1
-		# print self.W2
 
 	def load_weights(self, filename):
 		self.W1 = np.loadtxt(filename+"W1", delimiter=',')
