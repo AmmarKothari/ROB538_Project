@@ -14,9 +14,9 @@ def vect_sum(vect1, vect2):
 
 def check_quadrant(angle, quadrant):
     pi = math.pi
-    if quadrant == 1 and (7*pi/4 < angle < 2*pi or 0 < angle < pi/4):
+    if quadrant == 0 and (7*pi/4 < angle < 2*pi or 0 < angle < pi/4):
         return True
-    elif (quadrant-1)*pi/2 - pi/4 < angle < (quadrant-1)*pi/2 + pi/4:
+    elif quadrant*pi/2 - pi/4 < angle < quadrant*pi/2 + pi/4:
         return True
     else:
         return False
