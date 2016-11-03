@@ -139,10 +139,13 @@ class Simulator(object):
 			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
 
 	def reset_agents_static(self):
-
+		""" Experimental static reset """
+		poipos = [(100, 50),(200, 100),(120, 150)]
+		poihead = [1.0, 1.0, 0.5]
 		# Resetting POIs
-		for i in self.poi_list:
-			i.pos = (100, 50)
+		for i in range(len(self.poi_list)):
+			self.poi_list[i].pos = poipos[i]
+			self.poi_list[i].heading = poihead[i]
 
 		# Resetting Rovers
 		for i in self.rover_list:
@@ -295,8 +298,8 @@ class Rover(Agent):
 	# Simulation step for the rovers
 	def sim_step(self, nn_outputs):
 		# print self.vel_ang, utils.get_norm(self.vel_lin)
-		self.vel_ang = 0.05*nn_outputs[0]
-		self.set_vel_lin(nn_outputs[1])
+		self.vel_ang = 0.5*nn_outputs[0]
+		self.set_vel_lin(nn_outputs[1]*10)
 		self.update_heading();
 		self.update_pos();
 # =======================================================

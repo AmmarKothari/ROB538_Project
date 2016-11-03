@@ -29,13 +29,13 @@ POI_SIZE			= 3
 ENABLE_GRAPHICS		= 1	# Enabling graphics will load NNs from file
 
 # World parameters
-NUM_SIM_STEPS		= 2000
+NUM_SIM_STEPS		= 600
 WORLD_WIDTH			= 240.0
 WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
 NUM_POIS			= 1
-POI_MIN_VEL			= 0.05
-POI_MAX_VEL			= 0.05
+POI_MIN_VEL			= 0.0
+POI_MAX_VEL			= 0.0
 MIN_SENSOR_DIST		= 10
 MAX_SENSOR_DIST		= 500
 
@@ -88,8 +88,8 @@ def draw_world(simulator):
 def execute_episode(pop_set):
 
 	# Randomizing starting positions
-	# simulator.reset_agents(0, 0)
-	simulator.reset_agents_static()
+	simulator.reset_agents(0, 0)
+	# simulator.reset_agents_static()
 
 	# Reset performance counter
 	simulator.reset_performance(pop_set)
@@ -118,7 +118,7 @@ simulator = Simulator(
 		world_height 		= WORLD_HEIGHT)
 
 simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
-simulator.reset_agents_static()
+# simulator.reset_agents_static()
 
 simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
 
