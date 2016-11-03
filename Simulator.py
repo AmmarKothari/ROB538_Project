@@ -81,6 +81,7 @@ class Simulator(object):
 			inputs = self.return_NN_inputs(rover)
 			rover.population[pop_set].performance += sum(inputs[4:7]) #???#
 			outputs = rover.population[pop_set].forward(inputs)
+			# print outputs
 			rover.sim_step(outputs)
 
 
@@ -97,7 +98,7 @@ class Simulator(object):
 			mutantlist = []
 			for nn in rover.population:
 				mutant = copy.deepcopy(nn)
-				# mutant.perturb_weights(mutation_std)
+				mutant.perturb_weights(mutation_std)
 				mutantlist.append(mutant)
 			rover.population += mutantlist
 
@@ -146,6 +147,7 @@ class Simulator(object):
 		# Resetting Rovers
 		for i in self.rover_list:
 			i.pos = (50, 50)
+			i.heading = 0
 
 	# Computing sensor measurement
 	def measure_sensor(self, agentList, quadrant, rover):
@@ -159,7 +161,7 @@ class Simulator(object):
 				# print angle* 180 / math.pi, relative_angle * 180 / math.pi
 
 				if dist < self.max_sensor_dist and utils.check_quadrant(relative_angle, quadrant):
-					print 'IN QUADRANT: ', quadrant
+					# print 'IN QUADRANT: ', quadrant
 					sum += agent.value / max(dist**2, self.min_sensor_dist**2)
 		return sum
 	
@@ -206,7 +208,7 @@ class Simulator(object):
 		for i in range(4):
 			inputs.append(self.measure_sensor(self.poi_list, i, rover))
 
-		print inputs
+		# print inputs
 		return inputs
 # =======================================================
 # =======================================================
@@ -222,10 +224,10 @@ class Agent(object):
 	def __init__(self, posx, posy, heading, value = 1.0):
 		self.init_pos	= (posx, posy)		# Starting position
 		self.pos		= (posx, posy)		# Current position
-		self.vel_lin	= (0.0,0.0)			# Linear velocity
+		self.vel_lin	= (0.0, 0.0)		# Linear velocity
 		self.vel_ang	= 0.0				# Angular velocity (rad/sec)
 		self.heading	= heading			# Heading direction (rad)	
-		self.value		= value				# Utility value	
+		self.value		= value				# Utility value
 
 	# Update heading using angular velocity
 	def update_heading(self):

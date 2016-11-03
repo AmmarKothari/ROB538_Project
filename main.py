@@ -17,7 +17,7 @@ NN_NUM_HIDDEN_LRS	= 10
 # Evolution parameters
 POPULATION_SIZE		= 10
 MUTATION_STD		= 0.25
-NUM_GENERATIONS		= 10
+NUM_GENERATIONS		= 100
 
 # Graphics parameters
 WINDOW_TITLE		= "Rob538 Project - Rover Domain"
@@ -29,13 +29,13 @@ POI_SIZE			= 3
 ENABLE_GRAPHICS		= 1	# Enabling graphics will load NNs from file
 
 # World parameters
-NUM_SIM_STEPS		= 250
+NUM_SIM_STEPS		= 2000
 WORLD_WIDTH			= 240.0
 WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
 NUM_POIS			= 1
-POI_MIN_VEL			= 0.0
-POI_MAX_VEL			= 0.0
+POI_MIN_VEL			= 0.05
+POI_MAX_VEL			= 0.05
 MIN_SENSOR_DIST		= 10
 MAX_SENSOR_DIST		= 500
 
@@ -96,7 +96,7 @@ def execute_episode(pop_set):
 
 	# Running through each simulation step
 	for i in range(NUM_SIM_STEPS):
-		time.sleep(0.1)
+		# time.sleep(0.1)
 		simulator.sim_step(pop_set)
 		if ENABLE_GRAPHICS:
 			draw_world(simulator)
