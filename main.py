@@ -1,5 +1,6 @@
 from Tkinter import *
 from Simulator import *
+import time
 
 # =======================================================
 # Parameters
@@ -11,7 +12,7 @@ NN_WEIGHTS_FILENAME	= "NN_"
 # NN Parameters
 NN_NUM_INPUT_LRS	= 8
 NN_NUM_OUTPUT_LRS	= 2
-NN_NUM_HIDDEN_LRS	= 1
+NN_NUM_HIDDEN_LRS	= 10
 
 # Evolution parameters
 POPULATION_SIZE		= 10
@@ -28,13 +29,13 @@ POI_SIZE			= 3
 ENABLE_GRAPHICS		= 1	# Enabling graphics will load NNs from file
 
 # World parameters
-NUM_SIM_STEPS		= 1000
+NUM_SIM_STEPS		= 250
 WORLD_WIDTH			= 240.0
 WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
-NUM_POIS			= 10
-POI_MIN_VEL			= 0.01
-POI_MAX_VEL			= 0.05
+NUM_POIS			= 1
+POI_MIN_VEL			= 0.0
+POI_MAX_VEL			= 0.0
 MIN_SENSOR_DIST		= 10
 MAX_SENSOR_DIST		= 500
 
@@ -87,13 +88,15 @@ def draw_world(simulator):
 def execute_episode(pop_set):
 
 	# Randomizing starting positions
-	simulator.reset_agents()
+	# simulator.reset_agents(0, 0)
+	simulator.reset_agents_static()
 
 	# Reset performance counter
 	simulator.reset_performance(pop_set)
 
 	# Running through each simulation step
 	for i in range(NUM_SIM_STEPS):
+		time.sleep(0.1)
 		simulator.sim_step(pop_set)
 		if ENABLE_GRAPHICS:
 			draw_world(simulator)
@@ -115,6 +118,7 @@ simulator = Simulator(
 		world_height 		= WORLD_HEIGHT)
 
 simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
+simulator.reset_agents_static()
 
 simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
 
@@ -144,7 +148,7 @@ else:	# Evolving new NNs
 		# Selecting best weights
 		simulator.select()
 
-		#  Storing NNs weights for later execution/visualization
+		# Storing NNs weights for later execution/visualization
 		simulator.store_bestWeights(NN_WEIGHTS_FILENAME)
 
 		# Printing overall performance of each NN for each rover

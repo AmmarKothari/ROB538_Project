@@ -79,7 +79,7 @@ class Simulator(object):
 		# Rovers step
 		for rover in self.rover_list:
 			inputs = self.return_NN_inputs(rover)
-			rover.population[pop_set].performance += sum(inputs[4:7])
+			rover.population[pop_set].performance += sum(inputs[4:7]) #???#
 			outputs = rover.population[pop_set].forward(inputs)
 			rover.sim_step(outputs)
 
@@ -137,16 +137,30 @@ class Simulator(object):
 		for i in self.rover_list:
 			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
 
+	def reset_agents_static(self):
+
+		# Resetting POIs
+		for i in self.poi_list:
+			i.pos = (100, 50)
+
+		# Resetting Rovers
+		for i in self.rover_list:
+			i.pos = (50, 50)
+
 	# Computing sensor measurement
 	def measure_sensor(self, agentList, quadrant, rover):
 		sum = 0
 		for agent in agentList:
-			vect = utils.vect_sub(agent.pos, rover.pos)
-			dist = utils.get_norm(vect)
-			angle = utils.get_angle(vect)
-			relative_angle = (angle - rover.heading + math.pi/2) % (2*math.pi)
-			if dist < self.max_sensor_dist and utils.check_quadrant(relative_angle, quadrant):
-				sum += agent.value / max(dist**2, self.min_sensor_dist**2)
+			if agent != rover:
+				vect = utils.vect_sub(agent.pos, rover.pos)
+				dist = utils.get_norm(vect)
+				angle = utils.get_angle(vect)
+				relative_angle = (angle - rover.heading) % (2*math.pi)
+				# print angle* 180 / math.pi, relative_angle * 180 / math.pi
+
+				if dist < self.max_sensor_dist and utils.check_quadrant(relative_angle, quadrant):
+					print 'IN QUADRANT: ', quadrant
+					sum += agent.value / max(dist**2, self.min_sensor_dist**2)
 		return sum
 	
 	def return_POI_vel(self, poiList, max_dist = 500):
@@ -192,7 +206,7 @@ class Simulator(object):
 		for i in range(4):
 			inputs.append(self.measure_sensor(self.poi_list, i, rover))
 
-
+		print inputs
 		return inputs
 # =======================================================
 # =======================================================
@@ -278,6 +292,7 @@ class Rover(Agent):
 
 	# Simulation step for the rovers
 	def sim_step(self, nn_outputs):
+		# print self.vel_ang, utils.get_norm(self.vel_lin)
 		self.vel_ang = 0.05*nn_outputs[0]
 		self.set_vel_lin(nn_outputs[1])
 		self.update_heading();
