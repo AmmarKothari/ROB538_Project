@@ -9,7 +9,7 @@ from Simulator import *
 NN_WEIGHTS_FILENAME	= "NN_"
 
 # NN Parameters
-NN_NUM_INPUT_LRS	= 8
+NN_NUM_INPUT_LRS	= 16
 NN_NUM_OUTPUT_LRS	= 2
 NN_NUM_HIDDEN_LRS	= 1
 

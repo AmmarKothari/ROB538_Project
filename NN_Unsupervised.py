@@ -10,6 +10,7 @@ class NeuralNet(object):
 		self.W1 = np.random.normal(loc =0.0, scale =1.0, size=(self.inputLayerSize,self.hiddenLayerSize))
 		self.W2 = np.random.normal(loc =0.0, scale =1.0, size=(self.hiddenLayerSize,self.outputLayerSize))
 
+
 	def forward(self, X):
 
 		# Bias input
@@ -39,6 +40,7 @@ class NeuralNet(object):
 	def store_weights(self, filename):
 		np.savetxt(filename+"W1", self.W1, delimiter=',')
 		np.savetxt(filename+"W2", self.W2, delimiter=',')
+
 
 	def load_weights(self, filename):
 		self.W1 = np.loadtxt(filename+"W1", delimiter=',')

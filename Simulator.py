@@ -165,33 +165,36 @@ class Simulator(object):
 					sum += agent.value / max(dist**2, self.min_sensor_dist**2)
 		return sum
 	
-	def return_POI_vel(self, poiList, max_dist = 500):
+	def return_POI_vel(self, poiList, rover, max_dist = 500):
                 min_dist = 10
                 sum = np.zeros([4,2])
                 count = np.zeros(4)
                 for poi in poiList:
 
-                    # get quadrant of POI
-                    vect = utils.vect_sub(poi.pos, self.pos)
+                    #get quarant of POI
+                    vect = utils.vect_sub(poi.pos, rover.pos)
                     dist = utils.get_norm(vect)
+                    dist_2 = dist ** 2
                     angle = utils.get_angle(vect) % (2*math.pi ) # Between 0 to 2pi
-                    relative_angle = (angle - self.heading + math.pi/2) % (2*math.pi)
+                    relative_angle = (angle - rover.heading + math.pi/2) % (2*math.pi)
                     q = utils.get_quadrant(relative_angle) - 1
                     
-                    # get relative velocity of POI to agent.
-                    poi_vel_vect = np.array([math.cos(poi.heading), math.sin(poi.heading)])*poi.speed
-                    rover_vel_vect = np.array([math.cos(self.heading), math.sin(self.heading)])*self.speed
-                    rel_vel_vect = rover_vel_vect - poi_vel_vect
-                    if q == 2:
-                        rel_vel_vect[1] *= -1
-                    elif q == 3:
-                        rel_vel_vect[0] *= -1
+                    #get relative velocity of POI to agent.
+
+                    poi_vel_vect = np.array(poi.vel_lin)
+                    rover_vel_vect = np.array(rover.vel_lin)
+                    rel_vel_vect =  poi_vel_vect - rover_vel_vect
+
+                    if rover.pos[0] < poi.pos[0]:
+                    	rel_vel_vect[0] *= -1
+                    if rover.pos[1] < poi.pos[1]:
+                    	rel_vel_vect[1] *= -1
 
                     
-                    # update average velocity vector
+                    #update average velocity vector
                     count[q] += 1
-                    sum[q][0] = (sum[q][0] * (count[q] - 1) + rel_vel_vect[0]) / count[q]
-                    sum[q][1] = (sum[q][1] * (count[q] - 1) + rel_vel_vect[1]) / count[q]
+                    sum[q][0] = (sum[q][0] * (count[q] - 1) + rel_vel_vect[0]/dist_2) / count[q]
+                    sum[q][1] = (sum[q][1] * (count[q] - 1) + rel_vel_vect[1]/dist_2) / count[q]
 
                 return sum
 	
@@ -208,7 +211,10 @@ class Simulator(object):
 		for i in range(4):
 			inputs.append(self.measure_sensor(self.poi_list, i, rover))
 
-
+		vel_sensor_vals = self.return_POI_vel(self.poi_list,rover)
+		for i in range(4):
+			inputs.append(vel_sensor_vals[i][0])
+			inputs.append(vel_sensor_vals[i][1])
 		return inputs
 # =======================================================
 # =======================================================

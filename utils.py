@@ -20,3 +20,13 @@ def check_quadrant(angle, quadrant):
         return True
     else:
         return False
+
+
+def get_quadrant(angle):
+    step = math.pi/4
+
+    quadrants = [3, 2, 2, 1, 1, 4, 4, 3]
+
+    i = angle // step
+
+    return quadrants[int(i)]
