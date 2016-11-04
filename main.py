@@ -1,5 +1,6 @@
 from Tkinter import *
 from Simulator import *
+import sys
 import csv
 import time
 
@@ -12,9 +13,9 @@ NN_WEIGHTS_FILENAME	= "NN_"
 RWD_FILENAME		= "RWD_"
 
 # NN Parameters
-NN_NUM_INPUT_LRS	= 8
-NN_NUM_OUTPUT_LRS	= 2
-NN_NUM_HIDDEN_LRS	= 3
+NN_IN_LYR_SIZE		= 8
+NN_OUT_LYR_SIZE		= 2
+NN_HID_LYR_SIZE		= 3
 
 # Evolution parameters
 POPULATION_SIZE		= 10
@@ -28,18 +29,17 @@ ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
-SLEEP_VIEW			= 0.250
-ENABLE_GRAPHICS		= 0	# Enabling graphics will load NNs from file
+SLEEP_VIEW			= 0.100
 
 # World parameters
-NUM_SIM_STEPS		= 400
-WORLD_WIDTH			= 240.0
-WORLD_HEIGHT		= 240.0
-NUM_ROVERS			= 1
+NUM_SIM_STEPS		= 40
+WORLD_WIDTH			= 200.0
+WORLD_HEIGHT		= 200.0
+NUM_ROVERS			= 3
 NUM_POIS			= 10
 POI_MIN_VEL			= 0.0
-POI_MAX_VEL			= 0.0
-MIN_SENSOR_DIST		= 10
+POI_MAX_VEL			= 1.0
+MIN_SENSOR_DIST		= 5
 MAX_SENSOR_DIST		= 500
 
 HOLONOMIC_ROVER		= 1
@@ -47,6 +47,14 @@ RND_START_EPISODE	= 1
 RND_START_ALL		= 1
 INPUT_SCALING		= 100
 OUTPUT_SCALING		= 5
+
+# Enabling/disabling evolution with command line parameter
+if len(sys.argv) > 1 and sys.argv[1][0] == '-' and sys.argv[1][1] == 'e':
+	print "Evolution enabled. No graphics."
+	disable_evol = 0
+else:
+	print "Evolution disabled. Graphics activated."
+	disable_evol = 1
 
 # For custom agent initialization
 POI_LOCATIONS = [(25,	 25,	1),
@@ -105,7 +113,7 @@ def draw_world(simulator):
 def execute_episode(pop_set):
 
 	# Randomizing starting positions
-	simulator.reset_agents(RND_START_EPISODE, RND_START_EPISODE, RND_START_EPISODE and not HOLONOMIC_ROVER)
+	simulator.reset_agents(RND_START_EPISODE, RND_START_EPISODE)
 
 	# Reset performance counter
 	simulator.reset_performance(pop_set)
@@ -113,7 +121,7 @@ def execute_episode(pop_set):
 	# Running through each simulation step
 	for i in range(NUM_SIM_STEPS):
 		simulator.sim_step(pop_set)
-		if ENABLE_GRAPHICS:
+		if disable_evol:
 			draw_world(simulator)
 			time.sleep(SLEEP_VIEW)
 
@@ -122,7 +130,7 @@ def execute_episode(pop_set):
 # Main code
 # =======================================================
 
-if ENABLE_GRAPHICS:
+if disable_evol:
 	init_canvas()
 
 simulator = Simulator(
@@ -134,13 +142,13 @@ simulator = Simulator(
 		world_height 		= WORLD_HEIGHT)
 
 if RND_START_ALL:
-	simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
+	simulator.init_world(POI_MIN_VEL, POI_MAX_VEL, HOLONOMIC_ROVER)
 else:
 	simulator.init_world_custom(POI_MIN_VEL, POI_MAX_VEL, POI_LOCATIONS, ROVER_LOCATIONS)
 
-simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS, HOLONOMIC_ROVER)
+simulator.initRoverNNs(POPULATION_SIZE, NN_IN_LYR_SIZE, NN_OUT_LYR_SIZE, NN_HID_LYR_SIZE, INPUT_SCALING, OUTPUT_SCALING)
 
-if ENABLE_GRAPHICS: # Visualizing results
+if disable_evol: # Visualizing results
 
 	# Loading best weights for each robot
 	simulator.load_bestWeights(NN_WEIGHTS_FILENAME)

@@ -30,11 +30,11 @@ class Simulator(object):
 
 
 	# Initialize world
-	def init_world(self, poi_min_vel, poi_max_vel):
+	def init_world(self, poi_min_vel, poi_max_vel, holonomic):
 
 		# Initializing rovers
 		for i in range(self.num_rovers):
-			self.add_rover(random.randint(0, self.world_height), random.randint(0, self.world_width), 0)
+			self.add_rover(random.randint(0, self.world_height), random.randint(0, self.world_width), 0, holonomic)
 
 		# Initializing POIs
 		for i in range(self.num_pois):
@@ -99,11 +99,10 @@ class Simulator(object):
 
 
 	# Initialize NNs for each rover
-	def initRoverNNs(self, pop_size, inputLayers, outputLayers, hiddenLayers, holonomic):
+	def initRoverNNs(self, pop_size, inputLayers, outputLayers, hiddenLayers, input_scaling, output_scaling):
 		for rover in self.rover_list:
-			rover.holonomic = holonomic
 			for i in range(pop_size):
-				rover.population.append(NeuralNet(inputLayers, outputLayers, hiddenLayers))
+				rover.population.append(NeuralNet(inputLayers, outputLayers, hiddenLayers, input_scaling, output_scaling))
 
 
 	# Initialize NNs for each rover
@@ -137,21 +136,29 @@ class Simulator(object):
 
 
 	# Registering new rover
-	def add_rover(self, x=0, y=0, heading=0):
-		self.rover_list.append(Rover(x, y, heading))
+	def add_rover(self, x=0, y=0, heading=0, holonomic=1):
+		self.rover_list.append(Rover(x, y, heading, holonomic))
 
 
 	# Resetting agents to random or initial starting position
-	def reset_agents(self, rnd_pois = 1, rnd_rover_pos = 1, rnd_rover_heading = 0):
+	def reset_agents(self, rnd_pois = 1, rnd_rover_pos = 1):
+
 		# Resetting POIs
-		for i in self.poi_list:
-			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
-			i.heading = i.init_head if not rnd_pois else (random.randint(0,360))
+		for poi in self.poi_list:
+			poi.pos		= poi.init_pos
+			poi.heading	= poi.init_head
+			if rnd_pois:
+				poi.pos		= random.randint(0,self.world_width), random.randint(0,self.world_height)
+				poi.heading	= random.randint(0,360)
 
 		# Resetting Rovers
-		for i in self.rover_list:
-			i.pos = i.init_pos if not rnd_rover_pos else (random.randint(0,self.world_width), random.randint(0,self.world_height))
-			i.heading = i.init_head if not rnd_rover_heading else (random.randint(0, 360))
+		for rover in self.rover_list:
+			rover.pos		= rover.init_pos
+			rover.heading 	= rover.init_head
+			if rnd_rover_pos:
+				rover.pos = random.randint(0,self.world_width), random.randint(0,self.world_height)
+				if not rover.holonomic:
+					rover.heading = random.randint(0, 360)
 
 	# Computing sensor measurement
 	def measure_sensor(self, agentList, quadrant, rover):
@@ -202,17 +209,15 @@ class Simulator(object):
 	# Gathering all sensor measurements
 	def return_NN_inputs(self, rover):
 
-		from main import INPUT_SCALING
-
 		inputs = []
 
 		# Sensing rovers
 		for i in range(4):
-			inputs.append(self.measure_sensor(self.rover_list, i, rover)*INPUT_SCALING)
+			inputs.append(self.measure_sensor(self.rover_list, i, rover))
 
 		# Sensing POIs
 		for i in range(4):
-			inputs.append(self.measure_sensor(self.poi_list, i, rover)*INPUT_SCALING)
+			inputs.append(self.measure_sensor(self.poi_list, i, rover))
 
 		# print inputs
 		return inputs
@@ -295,18 +300,17 @@ class Poi(Agent):
 # =======================================================
 class Rover(Agent):
 
-	def __init__(self, posx, posy, heading):
+	def __init__(self, posx, posy, heading, holonomic):
 		Agent.__init__(self, posx, posy, heading, 1.0)
 		self.population = []
+		self.holonomic = holonomic
 
 	# Simulation step for the rovers
 	def sim_step(self, nn_outputs):
 
-		from main import OUTPUT_SCALING
-
 		# print self.vel_ang, utils.get_norm(self.vel_lin)
 		if self.holonomic:
-			self.vel_lin = (nn_outputs[0]*OUTPUT_SCALING,nn_outputs[1]*OUTPUT_SCALING)
+			self.vel_lin = (nn_outputs[0],nn_outputs[1])
 			self.update_pos();
 		else:
 			self.vel_ang = nn_outputs[0]

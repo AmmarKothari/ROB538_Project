@@ -2,15 +2,21 @@ import numpy as np
 
 class NeuralNet(object):
 
-	def __init__(self, inputLayers, outputLayers, hiddenLayers):
+	def __init__(self, inputLayers, outputLayers, hiddenLayers, input_scaling, output_scaling):
 		self.inputLayerSize = inputLayers+1
 		self.outputLayerSize = outputLayers
 		self.hiddenLayerSize = hiddenLayers+1
 		self.performance = 0
+		self.input_scaling = input_scaling
+		self.output_scaling = output_scaling
 		self.W1 = np.random.normal(loc =0.0, scale =1.0, size=(self.inputLayerSize,self.hiddenLayerSize))
 		self.W2 = np.random.normal(loc =0.0, scale =1.0, size=(self.hiddenLayerSize,self.outputLayerSize))
 
 	def forward(self, X):
+
+		# Scaling inputs
+		for x in range(len(X)):
+			X[x] *= self.input_scaling
 
 		# Bias input
 		X.append(1)
@@ -26,6 +32,9 @@ class NeuralNet(object):
 
 		# Output weighting 
 		yHat = np.dot(self.a2, self.W2)
+
+		# Scaling outputs
+		yHat *= self.output_scaling
 
 		return yHat
 
