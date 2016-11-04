@@ -34,7 +34,7 @@ class Simulator(object):
 
 		# Initializing rovers
 		for i in range(self.num_rovers):
-			self.add_rover(random.randint(0, self.world_height), random.randint(0, self.world_width), random.randint(0, 360))
+			self.add_rover(random.randint(0, self.world_height), random.randint(0, self.world_width), 0)
 
 		# Initializing POIs
 		for i in range(self.num_pois):
@@ -99,8 +99,9 @@ class Simulator(object):
 
 
 	# Initialize NNs for each rover
-	def initRoverNNs(self, pop_size, inputLayers, outputLayers, hiddenLayers):
+	def initRoverNNs(self, pop_size, inputLayers, outputLayers, hiddenLayers, holonomic):
 		for rover in self.rover_list:
+			rover.holonomic = holonomic
 			for i in range(pop_size):
 				rover.population.append(NeuralNet(inputLayers, outputLayers, hiddenLayers))
 
@@ -299,9 +300,13 @@ class Rover(Agent):
 	# Simulation step for the rovers
 	def sim_step(self, nn_outputs):
 		# print self.vel_ang, utils.get_norm(self.vel_lin)
-		self.vel_ang = nn_outputs[0]
-		self.set_vel_lin(nn_outputs[1])
-		self.update_heading();
-		self.update_pos();
+		if self.holonomic:
+			self.vel_lin = (nn_outputs[0],nn_outputs[1])
+			self.update_pos();
+		else:
+			self.vel_ang = nn_outputs[0]
+			self.set_vel_lin(nn_outputs[1])
+			self.update_heading();
+			self.update_pos();
 # =======================================================
 # =======================================================

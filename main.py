@@ -12,7 +12,7 @@ NN_WEIGHTS_FILENAME	= "NN_"
 # NN Parameters
 NN_NUM_INPUT_LRS	= 8
 NN_NUM_OUTPUT_LRS	= 2
-NN_NUM_HIDDEN_LRS	= 10
+NN_NUM_HIDDEN_LRS	= 3
 
 # Evolution parameters
 POPULATION_SIZE		= 10
@@ -26,18 +26,23 @@ ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
-ENABLE_GRAPHICS		= 0	# Enabling graphics will load NNs from file
+SLEEP_VIEW			= 0.025
+ENABLE_GRAPHICS		= 1	# Enabling graphics will load NNs from file
 
 # World parameters
 NUM_SIM_STEPS		= 600
 WORLD_WIDTH			= 240.0
 WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
-NUM_POIS			= 1
+NUM_POIS			= 10
 POI_MIN_VEL			= 1.0
 POI_MAX_VEL			= 1.0
 MIN_SENSOR_DIST		= 10
 MAX_SENSOR_DIST		= 500
+
+HOLONOMIC_ROVER		= 1
+RND_START_EPISODE	= 1
+RND_START_ALL		= 1
 
 # For custom agent initialization
 POI_LOCATIONS = [(25,	 25,	1),
@@ -96,17 +101,17 @@ def draw_world(simulator):
 def execute_episode(pop_set):
 
 	# Randomizing starting positions
-	simulator.reset_agents(0, 0)
+	simulator.reset_agents(RND_START_EPISODE,RND_START_EPISODE)
 
 	# Reset performance counter
 	simulator.reset_performance(pop_set)
 
 	# Running through each simulation step
 	for i in range(NUM_SIM_STEPS):
-		time.sleep(0.1)
 		simulator.sim_step(pop_set)
 		if ENABLE_GRAPHICS:
 			draw_world(simulator)
+			time.sleep(SLEEP_VIEW)
 
 
 # =======================================================
@@ -124,10 +129,12 @@ simulator = Simulator(
 		world_width 		= WORLD_WIDTH,
 		world_height 		= WORLD_HEIGHT)
 
-# simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
-simulator.init_world_custom(POI_MIN_VEL, POI_MAX_VEL, POI_LOCATIONS, ROVER_LOCATIONS)
+if RND_START_ALL:
+	simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
+else:
+	simulator.init_world_custom(POI_MIN_VEL, POI_MAX_VEL, POI_LOCATIONS, ROVER_LOCATIONS)
 
-simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
+simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS, HOLONOMIC_ROVER)
 
 if ENABLE_GRAPHICS: # Visualizing results
 
