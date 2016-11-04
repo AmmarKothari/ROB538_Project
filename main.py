@@ -15,9 +15,9 @@ NN_NUM_OUTPUT_LRS	= 2
 NN_NUM_HIDDEN_LRS	= 3
 
 # Evolution parameters
-POPULATION_SIZE		= 10
-MUTATION_STD		= 0.25
-NUM_GENERATIONS		= 100
+POPULATION_SIZE		= 100
+MUTATION_STD		= 0.05
+NUM_GENERATIONS		= 100000
 
 # Graphics parameters
 WINDOW_TITLE		= "Rob538 Project - Rover Domain"
@@ -30,7 +30,7 @@ SLEEP_VIEW			= 0.025
 ENABLE_GRAPHICS		= 1	# Enabling graphics will load NNs from file
 
 # World parameters
-NUM_SIM_STEPS		= 600
+NUM_SIM_STEPS		= 500
 WORLD_WIDTH			= 240.0
 WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
@@ -101,7 +101,7 @@ def draw_world(simulator):
 def execute_episode(pop_set):
 
 	# Randomizing starting positions
-	simulator.reset_agents(RND_START_EPISODE,RND_START_EPISODE)
+	simulator.reset_agents(RND_START_EPISODE, RND_START_EPISODE, RND_START_EPISODE and not HOLONOMIC_ROVER)
 
 	# Reset performance counter
 	simulator.reset_performance(pop_set)

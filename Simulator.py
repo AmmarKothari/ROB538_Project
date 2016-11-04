@@ -142,7 +142,7 @@ class Simulator(object):
 
 
 	# Resetting agents to random or initial starting position
-	def reset_agents(self, rnd_pois = 1, rnd_rovers = 1):
+	def reset_agents(self, rnd_pois = 1, rnd_rover_pos = 1, rnd_rover_heading = 0):
 		# Resetting POIs
 		for i in self.poi_list:
 			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
@@ -150,8 +150,8 @@ class Simulator(object):
 
 		# Resetting Rovers
 		for i in self.rover_list:
-			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
-			i.heading = i.init_head if not rnd_pois else (random.randint(0, 360))
+			i.pos = i.init_pos if not rnd_rover_pos else (random.randint(0,self.world_width), random.randint(0,self.world_height))
+			i.heading = i.init_head if not rnd_rover_heading else (random.randint(0, 360))
 
 	# Computing sensor measurement
 	def measure_sensor(self, agentList, quadrant, rover):
