@@ -45,6 +45,19 @@ class Simulator(object):
 			poi.heading = random.randint(0, 360)
 			poi.set_vel_lin(random.uniform(poi_min_vel, poi_max_vel))
 
+	def init_world_custom(self, poi_min_vel, poi_max_vel, poi_locations, rover_locations):
+
+		# Initializing rovers
+		for i in range(self.num_rovers):
+			self.add_rover(rover_locations[i][0], rover_locations[i][1], rover_locations[i][2])
+
+		# Initializing POIs
+		for i in range(self.num_pois):
+			self.add_poi(poi_locations[i][0], poi_locations[i][1], poi_locations[i][2])
+
+		# Setting POIs initial velocities
+		for poi in self.poi_list:
+			poi.set_vel_lin((poi_max_vel + poi_min_vel)/2.0)
 
 	# Reset performance counter
 	def reset_performance(self, pop_set):
@@ -129,28 +142,15 @@ class Simulator(object):
 
 	# Resetting agents to random or initial starting position
 	def reset_agents(self, rnd_pois = 1, rnd_rovers = 1):
-
 		# Resetting POIs
 		for i in self.poi_list:
 			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
+			i.heading = i.init_head if not rnd_pois else (random.randint(0,360))
 
 		# Resetting Rovers
 		for i in self.rover_list:
 			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
-
-	def reset_agents_static(self):
-		""" Experimental static reset """
-		poipos = [(100, 50),(200, 100),(120, 150)]
-		poihead = [1.0, 1.0, 0.5]
-		# Resetting POIs
-		for i in range(len(self.poi_list)):
-			self.poi_list[i].pos = poipos[i]
-			self.poi_list[i].heading = poihead[i]
-
-		# Resetting Rovers
-		for i in self.rover_list:
-			i.pos = (50, 50)
-			i.heading = 0
+			i.heading = i.init_head if not rnd_pois else (random.randint(0, 360))
 
 	# Computing sensor measurement
 	def measure_sensor(self, agentList, quadrant, rover):
@@ -229,6 +229,7 @@ class Agent(object):
 		self.pos		= (posx, posy)		# Current position
 		self.vel_lin	= (0.0, 0.0)		# Linear velocity
 		self.vel_ang	= 0.0				# Angular velocity (rad/sec)
+		self.init_head  = heading  			# Starting position
 		self.heading	= heading			# Heading direction (rad)	
 		self.value		= value				# Utility value
 
@@ -298,8 +299,8 @@ class Rover(Agent):
 	# Simulation step for the rovers
 	def sim_step(self, nn_outputs):
 		# print self.vel_ang, utils.get_norm(self.vel_lin)
-		self.vel_ang = 0.5*nn_outputs[0]
-		self.set_vel_lin(nn_outputs[1]*10)
+		self.vel_ang = nn_outputs[0]
+		self.set_vel_lin(nn_outputs[1])
 		self.update_heading();
 		self.update_pos();
 # =======================================================

@@ -34,10 +34,18 @@ WORLD_WIDTH			= 240.0
 WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
 NUM_POIS			= 1
-POI_MIN_VEL			= 0.0
-POI_MAX_VEL			= 0.0
+POI_MIN_VEL			= 1.0
+POI_MAX_VEL			= 1.0
 MIN_SENSOR_DIST		= 10
 MAX_SENSOR_DIST		= 500
+
+# For custom agent initialization
+POI_LOCATIONS = [(25,	 25,	1),
+			 	 (120,	 25,	1),
+				 (80,	100,	2),
+				 (50,	120,	3)]
+
+ROVER_LOCATIONS = [(120, 120, 0)]
 
 # =======================================================
 # Graphics
@@ -89,14 +97,13 @@ def execute_episode(pop_set):
 
 	# Randomizing starting positions
 	simulator.reset_agents(0, 0)
-	# simulator.reset_agents_static()
 
 	# Reset performance counter
 	simulator.reset_performance(pop_set)
 
 	# Running through each simulation step
 	for i in range(NUM_SIM_STEPS):
-		# time.sleep(0.1)
+		time.sleep(0.1)
 		simulator.sim_step(pop_set)
 		if ENABLE_GRAPHICS:
 			draw_world(simulator)
@@ -117,8 +124,8 @@ simulator = Simulator(
 		world_width 		= WORLD_WIDTH,
 		world_height 		= WORLD_HEIGHT)
 
-simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
-# simulator.reset_agents_static()
+# simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
+simulator.init_world_custom(POI_MIN_VEL, POI_MAX_VEL, POI_LOCATIONS, ROVER_LOCATIONS)
 
 simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
 
