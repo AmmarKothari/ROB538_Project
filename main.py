@@ -15,9 +15,9 @@ NN_NUM_OUTPUT_LRS	= 2
 NN_NUM_HIDDEN_LRS	= 3
 
 # Evolution parameters
-POPULATION_SIZE		= 100
-MUTATION_STD		= 0.05
-NUM_GENERATIONS		= 100000
+POPULATION_SIZE		= 10
+MUTATION_STD		= 0.15
+NUM_GENERATIONS		= 100
 
 # Graphics parameters
 WINDOW_TITLE		= "Rob538 Project - Rover Domain"
@@ -30,23 +30,24 @@ SLEEP_VIEW			= 0.025
 ENABLE_GRAPHICS		= 1	# Enabling graphics will load NNs from file
 
 # World parameters
-NUM_SIM_STEPS		= 500
+NUM_SIM_STEPS		= 400
 WORLD_WIDTH			= 240.0
 WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
-NUM_POIS			= 10
-POI_MIN_VEL			= 1.0
-POI_MAX_VEL			= 1.0
+NUM_POIS			= 2
+POI_MIN_VEL			= 0.0
+POI_MAX_VEL			= 0.0
 MIN_SENSOR_DIST		= 10
 MAX_SENSOR_DIST		= 500
+INPUT_SCALING 		= 100
 
-HOLONOMIC_ROVER		= 1
-RND_START_EPISODE	= 1
-RND_START_ALL		= 1
+HOLONOMIC_ROVER		= 0
+RND_START_EPISODE	= 0
+RND_START_ALL		= 0
 
 # For custom agent initialization
 POI_LOCATIONS = [(25,	 25,	1),
-			 	 (120,	 25,	1),
+			 	 (180,	 75,	1),
 				 (80,	100,	2),
 				 (50,	120,	3)]
 
