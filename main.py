@@ -28,7 +28,7 @@ ROVER_SIZE			= 5
 POI_SIZE			= 3
 SLEEP_VIEW			= 0.025
 ENABLE_GRAPHICS		= 1	# Enabling graphics will load NNs from file
-#
+
 # World parameters
 NUM_SIM_STEPS		= 400
 WORLD_WIDTH			= 240.0
