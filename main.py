@@ -17,8 +17,8 @@ NN_NUM_OUTPUT_LRS	= 2
 NN_NUM_HIDDEN_LRS	= 3
 
 # Evolution parameters
-POPULATION_SIZE		= 20
-MUTATION_STD		= 0.05
+POPULATION_SIZE		= 10
+MUTATION_STD		= 0.15
 NUM_GENERATIONS		= 100000
 
 # Graphics parameters
@@ -32,7 +32,7 @@ SLEEP_VIEW			= 0.250
 ENABLE_GRAPHICS		= 0	# Enabling graphics will load NNs from file
 
 # World parameters
-NUM_SIM_STEPS		= 40
+NUM_SIM_STEPS		= 400
 WORLD_WIDTH			= 240.0
 WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
@@ -45,6 +45,8 @@ MAX_SENSOR_DIST		= 500
 HOLONOMIC_ROVER		= 1
 RND_START_EPISODE	= 1
 RND_START_ALL		= 1
+INPUT_SCALING		= 100
+OUTPUT_SCALING		= 5
 
 # For custom agent initialization
 POI_LOCATIONS = [(25,	 25,	1),
