@@ -201,16 +201,16 @@ class Simulator(object):
 	
 	# Gathering all sensor measurements
 	def return_NN_inputs(self, rover):
-		from main import INPUT_SCALING
+
 		inputs = []
 
 		# Sensing rovers
 		for i in range(4):
-			inputs.append(self.measure_sensor(self.rover_list, i, rover)*INPUT_SCALING)
+			inputs.append(self.measure_sensor(self.rover_list, i, rover))
 
 		# Sensing POIs
 		for i in range(4):
-			inputs.append(self.measure_sensor(self.poi_list, i, rover)*INPUT_SCALING)
+			inputs.append(self.measure_sensor(self.poi_list, i, rover))
 
 		# print inputs
 		return inputs
@@ -301,7 +301,7 @@ class Rover(Agent):
 	def sim_step(self, nn_outputs):
 		# print self.vel_ang, utils.get_norm(self.vel_lin)
 		if self.holonomic:
-			self.vel_lin = (nn_outputs[0] * 5.0 ,nn_outputs[1] * 5.0)
+			self.vel_lin = (nn_outputs[0],nn_outputs[1])
 			self.update_pos();
 		else:
 			self.vel_ang = nn_outputs[0]
