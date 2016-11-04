@@ -72,8 +72,7 @@ class Simulator(object):
 	# Storing NN weights
 	def store_bestWeights(self, filename):
 		for i in range(self.num_rovers):
-			best = max(self.rover_list[i].population, key=attrgetter('performance'))
-			best.store_weights(filename+"R"+str(i)+"_")
+			self.rover_list[i].population[-1].store_weights(filename+"R"+str(i)+"_")
 
 	# Iterate the world simulation
 	def sim_step(self, pop_set):
@@ -167,16 +166,32 @@ class Simulator(object):
 		for i in self.rover_list:
 			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
 
+	def reset_agents_static(self):
+		""" Experimental static reset """
+		poipos = [(100, 50), (200, 100), (120, 150)]
+		poihead = [1.0, 1.0, 0.5]
+		# Resetting POIs
+		for i in range(len(self.poi_list)):
+			self.poi_list[i].pos = poipos[i]
+			self.poi_list[i].heading = poihead[i]
+
+		# Resetting Rovers
+		for i in self.rover_list:
+			i.pos = (50, 50)
+			i.heading = 0
+
 	# Computing sensor measurement
 	def measure_sensor(self, agentList, quadrant, rover):
 		sum = 0
 		for agent in agentList:
-			vect = utils.vect_sub(agent.pos, rover.pos)
-			dist = utils.get_norm(vect)
-			angle = utils.get_angle(vect)
-			relative_angle = (angle - rover.heading + math.pi/2) % (2*math.pi)
-			if dist < self.max_sensor_dist and utils.check_quadrant(relative_angle, quadrant):
-				sum += agent.value / max(dist**2, self.min_sensor_dist**2)
+			if agent != rover:
+				vect = utils.vect_sub(agent.pos, rover.pos)
+				dist = utils.get_norm(vect)
+				angle = utils.get_angle(vect)
+				relative_angle = (angle - rover.heading) % (2*math.pi)
+				if dist < self.max_sensor_dist and utils.check_quadrant(relative_angle, quadrant):
+					# print 'IN QUADRANT: ', quadrant
+					sum += agent.value / max(dist**2, self.min_sensor_dist**2)
 		return sum
 	
 	def return_POI_vel(self, poiList, rover, max_dist = 500):

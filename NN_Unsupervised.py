@@ -1,30 +1,52 @@
 import numpy as np
 
 class NeuralNet(object):
-    def __init__(self, inputLayers, outputLayers, hiddenLayers):
-        self.inputLayerSize = inputLayers
-        self.outputLayerSize = outputLayers
-        self.hiddenLayerSize = hiddenLayers
-        self.performance = 0
 
-        self.W1 = np.random.randn(self.inputLayerSize, self.hiddenLayerSize)
-        self.W2 = np.random.randn(self.hiddenLayerSize, self.outputLayerSize)
 
-    def forward(self, X):
-         self.z2 = np.dot(X, self.W1)
-         self.a2 = self.sigmoid(self.z2)
-         self.z3 = np.dot(self.a2, self.W2)
-         yHat = self.sigmoid(self.z3)
-         return yHat
+	def __init__(self, inputLayers, outputLayers, hiddenLayers):
+		self.inputLayerSize = inputLayers+1
+		self.outputLayerSize = outputLayers
+		self.hiddenLayerSize = hiddenLayers+1
+		self.performance = 0
+		self.W1 = np.random.normal(loc =0.0, scale =1.0, size=(self.inputLayerSize,self.hiddenLayerSize))
+		self.W2 = np.random.normal(loc =0.0, scale =1.0, size=(self.hiddenLayerSize,self.outputLayerSize))
 
-    def sigmoid(self, z):
-         return 1/(1 + np.exp(-z))
 
-    def perturb_weights(self, perturbance):
-        pW1 = np.random.randn(self.inputLayerSize, self.hiddenLayerSize) * perturbance
-        self.W1 += pW1
-        pW2 = np.random.randn(self.hiddenLayerSize, self.outputLayerSize) * perturbance
-        self.W2 += pW2
+	def forward(self, X):
+
+		# Bias input
+		X.append(1)
+
+		# Input weighting 
+		self.z2 = np.dot(X, self.W1)
+
+		# Sigmoid activation function
+		self.a2 = self.sigmoid(self.z2)
+
+		# Bias on hidden layer
+		np.append(self.a2,1)
+
+		# Output weighting 
+		yHat = np.dot(self.a2, self.W2)
+
+		return yHat
+
+	def sigmoid(self, z):
+		return 1/(1 + np.exp(-z))-0.5
+
+	def perturb_weights(self, mutation_std):
+		self.W1 = np.random.normal(loc =self.W1, scale =mutation_std, size=(self.inputLayerSize,self.hiddenLayerSize))
+		self.W2 = np.random.normal(loc =self.W2, scale =mutation_std, size=(self.hiddenLayerSize,self.outputLayerSize))
+
+	def store_weights(self, filename):
+		np.savetxt(filename+"W1", self.W1, delimiter=',')
+		np.savetxt(filename+"W2", self.W2, delimiter=',')
+
+
+	def load_weights(self, filename):
+		self.W1 = np.loadtxt(filename+"W1", delimiter=',')
+		self.W2 = np.loadtxt(filename+"W2", delimiter=',')
+
 
 
 
