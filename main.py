@@ -26,7 +26,7 @@ ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
-ENABLE_GRAPHICS		= 1	# Enabling graphics will load NNs from file
+ENABLE_GRAPHICS		= 0	# Enabling graphics will load NNs from file
 
 # World parameters
 NUM_SIM_STEPS		= 600
