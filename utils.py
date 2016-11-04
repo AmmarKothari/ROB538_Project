@@ -1,4 +1,5 @@
 import math
+import pdb
 
 def get_norm(vect):
     return (vect[0] ** 2 + vect[1] ** 2) ** 0.5
@@ -28,5 +29,6 @@ def get_quadrant(angle):
     quadrants = [3, 2, 2, 1, 1, 4, 4, 3]
 
     i = angle // step
-
+    if math.isnan(i):
+        pdb.set_trace()
     return quadrants[int(i)]

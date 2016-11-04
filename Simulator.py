@@ -36,20 +36,30 @@ class Simulator(object):
 
 		# Initializing rovers
 		for i in range(self.num_rovers):
-			# self.add_rover(random.randint(0, self.world_height), random.randint(0, self.world_width), random.randint(0, 360))
-			self.add_rover(100,200,0)
+			self.add_rover(random.randint(0, self.world_height), random.randint(0, self.world_width), 0)
+
 		# Initializing POIs
 		for i in range(self.num_pois):
-			self.add_poi(random.randint(0, self.world_height), random.randint(0, self.world_width), random.randint(0, 360), random.randint(1, 10))
-			# self.add_poi(100,80,0)
+			self.add_poi(random.randint(0, self.world_height), random.randint(0, self.world_width), random.randint(0, 360))
 
 		# Setting POIs initial velocities
 		for poi in self.poi_list:
-			# poi.heading = random.randint(0, 360)
-			# poi.set_vel_lin(random.uniform(poi_min_vel, poi_max_vel))
-			poi.heading = math.pi/2
-			poi.set_vel_lin(0)
+			poi.heading = random.randint(0, 360)
+			poi.set_vel_lin(random.uniform(poi_min_vel, poi_max_vel))
 
+	def init_world_custom(self, poi_min_vel, poi_max_vel, poi_locations, rover_locations):
+
+		# Initializing rovers
+		for i in range(self.num_rovers):
+			self.add_rover(rover_locations[i][0], rover_locations[i][1], rover_locations[i][2])
+
+		# Initializing POIs
+		for i in range(self.num_pois):
+			self.add_poi(poi_locations[i][0], poi_locations[i][1], poi_locations[i][2])
+
+		# Setting POIs initial velocities
+		for poi in self.poi_list:
+			poi.set_vel_lin((poi_max_vel + poi_min_vel)/2.0)
 
 	# Reset performance counter
 	def reset_performance(self, pop_set):
@@ -94,8 +104,9 @@ class Simulator(object):
 
 
 	# Initialize NNs for each rover
-	def initRoverNNs(self, pop_size, inputLayers, outputLayers, hiddenLayers):
+	def initRoverNNs(self, pop_size, inputLayers, outputLayers, hiddenLayers, holonomic):
 		for rover in self.rover_list:
+			rover.holonomic = holonomic
 			for i in range(pop_size):
 				rover.population.append(NeuralNet(inputLayers, outputLayers, hiddenLayers))
 
@@ -156,29 +167,16 @@ class Simulator(object):
 
 
 	# Resetting agents to random or initial starting position
-	def reset_agents(self, rnd_pois = 0, rnd_rovers = 0):
-
+	def reset_agents(self, rnd_pois = 1, rnd_rover_pos = 1, rnd_rover_heading = 0):
 		# Resetting POIs
 		for i in self.poi_list:
 			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
+			i.heading = i.init_head if not rnd_pois else (random.randint(0,360))
 
 		# Resetting Rovers
 		for i in self.rover_list:
-			i.pos = i.init_pos if not rnd_pois else (random.randint(0,self.world_width), random.randint(0,self.world_height))
-
-	def reset_agents_static(self):
-		""" Experimental static reset """
-		poipos = [(100, 50), (200, 100), (120, 150)]
-		poihead = [1.0, 1.0, 0.5]
-		# Resetting POIs
-		for i in range(len(self.poi_list)):
-			self.poi_list[i].pos = poipos[i]
-			self.poi_list[i].heading = poihead[i]
-
-		# Resetting Rovers
-		for i in self.rover_list:
-			i.pos = (50, 50)
-			i.heading = 0
+			i.pos = i.init_pos if not rnd_rover_pos else (random.randint(0,self.world_width), random.randint(0,self.world_height))
+			i.heading = i.init_head if not rnd_rover_heading else (random.randint(0, 360))
 
 	# Computing sensor measurement
 	def measure_sensor(self, agentList, quadrant, rover):
@@ -189,9 +187,12 @@ class Simulator(object):
 				dist = utils.get_norm(vect)
 				angle = utils.get_angle(vect)
 				relative_angle = (angle - rover.heading) % (2*math.pi)
+				# print angle* 180 / math.pi, relative_angle * 180 / math.pi
+
 				if dist < self.max_sensor_dist and utils.check_quadrant(relative_angle, quadrant):
 					# print 'IN QUADRANT: ', quadrant
 					sum += agent.value / max(dist**2, self.min_sensor_dist**2)
+		
 		return sum
 	
 	def return_POI_vel(self, poiList, rover, max_dist = 500):
@@ -200,12 +201,14 @@ class Simulator(object):
                 count = np.zeros(4)
                 for poi in poiList:
 
-                    #get quarant of POI
+                    # get quadrant of POI
                     vect = utils.vect_sub(poi.pos, rover.pos)
                     dist = utils.get_norm(vect)
                     dist_2 = dist ** 2
                     angle = utils.get_angle(vect) % (2*math.pi ) # Between 0 to 2pi
                     relative_angle = (angle - rover.heading + math.pi/2) % (2*math.pi)
+                    if math.isnan(relative_angle):
+                    	pdb.set_trace()
                     q = utils.get_quadrant(relative_angle) - 1
                     
                     #get relative velocity of POI to agent.
@@ -230,15 +233,17 @@ class Simulator(object):
 	# Gathering all sensor measurements
 	def return_NN_inputs(self, rover):
 
+		from main import INPUT_SCALING
+
 		inputs = []
 
 		# Sensing rovers
 		for i in range(4):
-			inputs.append(self.measure_sensor(self.rover_list, i, rover))
+			inputs.append(self.measure_sensor(self.rover_list, i, rover)*INPUT_SCALING)
 
 		# Sensing POIs
 		for i in range(4):
-			inputs.append(self.measure_sensor(self.poi_list, i, rover))
+			inputs.append(self.measure_sensor(self.poi_list, i, rover)*INPUT_SCALING)
 
 		vel_sensor_vals = self.return_POI_vel(self.poi_list,rover)
 		for i in range(4):
@@ -262,8 +267,9 @@ class Agent(object):
 		self.pos_history= []
 		self.vel_lin	= (0.0,0.0)			# Linear velocity
 		self.vel_ang	= 0.0				# Angular velocity (rad/sec)
+		self.init_head  = heading  			# Starting position
 		self.heading	= heading			# Heading direction (rad)	
-		self.value		= value				# Utility value	
+		self.value		= value				# Utility value
 
 	# Update heading using angular velocity
 	def update_heading(self):
@@ -297,6 +303,17 @@ class Agent(object):
 		# Check top-bottom wall collisions
 		if self.pos[1] > world_height or self.pos[1] < 0:
 			self.set_heading((2*math.pi - self.heading) % (math.pi * 2))
+
+		#reset position to border location
+		if self.pos[0] > world_width:
+			self.pos = (world_width, self.pos[1])
+		elif self.pos[0] < 0:
+			self.pos = (0, self.pos[1])
+
+		if self.pos[1] > world_height:
+			self.pos = (self.pos[0], world_height)
+		elif self.pos[1] < 0:
+			self.pos = (self.pos[0], 0)
 # =======================================================
 # =======================================================
 
@@ -330,11 +347,18 @@ class Rover(Agent):
 
 	# Simulation step for the rovers
 	def sim_step(self, nn_outputs, world_width, world_height):
-		# self.vel_ang = nn_outputs[0]/10
-		# self.update_heading();
-		# self.set_vel_lin(abs(nn_outputs[1]))
-		self.vel_lin = nn_outputs[0], nn_outputs[1]
-		self.update_pos();
-		self.bounce_walls(world_width, world_height)
+
+		from main import OUTPUT_SCALING
+
+		# print self.vel_ang, utils.get_norm(self.vel_lin)
+		if self.holonomic:
+			self.vel_lin = (nn_outputs[0]*OUTPUT_SCALING,nn_outputs[1]*OUTPUT_SCALING)
+			self.update_pos();
+		else:
+			self.vel_ang = nn_outputs[0]
+			self.set_vel_lin(nn_outputs[1])
+			self.update_heading();
+			self.update_pos();
+		# self.bounce_walls(world_width, world_height)
 # =======================================================
 # =======================================================

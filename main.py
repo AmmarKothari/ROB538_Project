@@ -5,6 +5,8 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 import datetime
+import time
+import csv
 
 
 
@@ -20,8 +22,8 @@ NN_NUM_HIDDEN_LRS	= 3
 
 # Evolution parameters
 POPULATION_SIZE		= 10
-MUTATION_STD		= 0.05
-NUM_GENERATIONS		= 1000
+MUTATION_STD		= 0.5
+NUM_GENERATIONS		= 200
 
 # Graphics parameters
 WINDOW_TITLE		= "Rob538 Project - Rover Domain"
@@ -30,10 +32,12 @@ ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
-ENABLE_GRAPHICS		= 1
+SLEEP_VIEW			= 0.025
+ENABLE_GRAPHICS		= 0 # Enabling graphics will load NNs from file
+PLOT_ON             = 1
 
 # World parameters
-NUM_SIM_STEPS		= 500
+NUM_SIM_STEPS		= 100
 WORLD_WIDTH			= 240.0
 WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
@@ -41,12 +45,22 @@ NUM_POIS			= 10
 POI_MIN_VEL			= 0
 POI_MAX_VEL			= 0
 MIN_SENSOR_DIST		= 10
-MAX_SENSOR_DIST		= 2000
+MAX_SENSOR_DIST		= 500
 
+HOLONOMIC_ROVER		= 1
+RND_START_EPISODE	= 1
+RND_START_ALL		= 1
+INPUT_SCALING		= 100
+OUTPUT_SCALING		= 5
 
 # File Parameters
 NN_WEIGHTS_FILENAME	= "NN_"
 RESULTS_FILENAME = "RS_%s_POI%s_ROV%s" %(str(datetime.datetime.now()), str(NUM_POIS), str(NUM_ROVERS))
+RWD_FILENAME		= "RWD_"
+
+
+
+
 ###make dictionary with all variables!!!
 InputParameters = {
 	# NN Parameters
@@ -68,7 +82,13 @@ InputParameters = {
 	'POI_MIN_VEL'		: POI_MIN_VEL,
 	'POI_MAX_VEL'		: POI_MAX_VEL,
 	'MIN_SENSOR_DIST'	: MIN_SENSOR_DIST,
-	'MAX_SENSOR_DIST'	: MAX_SENSOR_DIST
+	'MAX_SENSOR_DIST'	: MAX_SENSOR_DIST,
+
+	'HOLONOMIC_ROVER'	: HOLONOMIC_ROVER,
+	'RND_START_EPISODE'	: RND_START_EPISODE,
+	'RND_START_ALL'		: RND_START_ALL,
+	'INPUT_SCALING'		: INPUT_SCALING,
+	'OUTPUT_SCALING'	: OUTPUT_SCALING,
 
 
 }
@@ -94,11 +114,9 @@ def get_points_triangle(agent, l=5):
 	x = agent.pos[0]
 	y = agent.pos[1]
 	t = agent.heading
-	st = math.sin(t)
-	ct = math.cos(t)
-	p1 = [x + l * st, y - l * ct]
-	p2 = [x - l * st, y + l * ct]
-	p3 = [x + 3 * l * ct, y + 3 * l * st]
+	p1 = [x + l * math.sin(t), y - l * math.cos(t)]
+	p2 = [x - l * math.sin(t), y + l * math.cos(t)]
+	p3 = [x + 3 * l * math.cos(t), y + 3 * l * math.sin(t)]
 	return [p1,p2,p3]
 
 # Draw world
@@ -126,7 +144,7 @@ def draw_world(simulator):
 def execute_episode(pop_set):
 
 	# Randomizing starting positions
-	simulator.reset_agents()
+	simulator.reset_agents(RND_START_EPISODE, RND_START_EPISODE, RND_START_EPISODE and not HOLONOMIC_ROVER)
 
 	# Reset performance counter
 	simulator.reset_performance(pop_set)
@@ -136,6 +154,7 @@ def execute_episode(pop_set):
 		simulator.sim_step(pop_set)
 		if ENABLE_GRAPHICS:
 			draw_world(simulator)
+			time.sleep(SLEEP_VIEW)
 
 	# pdb.set_trace()
 
@@ -154,36 +173,50 @@ simulator = Simulator(
 		world_width 		= WORLD_WIDTH,
 		world_height 		= WORLD_HEIGHT)
 
-simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
-
-simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS)
-
-
-best_perf = np.zeros(NUM_GENERATIONS)
-avg_perf = np.zeros(NUM_GENERATIONS)
-std_perf = np.zeros(NUM_GENERATIONS)
-
-
-
-
-if ENABLE_GRAPHICS:
-	simulator.load_bestWeights(NN_WEIGHTS_FILENAME)
-	for i in range(NUM_GENERATIONS):
-		execute_episode(0)
-# if ENABLE_GRAPHICS or ~ENABLE_GRAPHICS:
-# if ~ENABLE_GRAPHICS:
+if RND_START_ALL:
+	simulator.init_world(POI_MIN_VEL, POI_MAX_VEL)
 else:
-	fig = plt.figure()
-	ax = fig.add_subplot(111)
-	Ln, = ax.plot([0,0],'ro')
-	plt.ion()
-	plt.show()
-	generation_count = 0
-	plt.ion()
-	for i in range(NUM_GENERATIONS):
+	simulator.init_world_custom(POI_MIN_VEL, POI_MAX_VEL, POI_LOCATIONS, ROVER_LOCATIONS)
 
+simulator.initRoverNNs(POPULATION_SIZE, NN_NUM_INPUT_LRS, NN_NUM_OUTPUT_LRS, NN_NUM_HIDDEN_LRS, HOLONOMIC_ROVER)
+
+
+best_perf = np.zeros([NUM_ROVERS, NUM_GENERATIONS])
+avg_perf  = np.zeros([NUM_ROVERS, NUM_GENERATIONS])
+std_perf  = np.zeros([NUM_ROVERS, NUM_GENERATIONS])
+
+
+
+
+if ENABLE_GRAPHICS: # Visualizing results
+
+	# Loading best weights for each robot
+	simulator.load_bestWeights(NN_WEIGHTS_FILENAME)
+
+	# Running NUM_GENERATIONS times
+	for i in range(0,NUM_GENERATIONS,10):
+		execute_episode(0)
+
+else:	# Evolving new NNs
+	if PLOT_ON:
+		fig = plt.figure()
+		ax = fig.add_subplot(111)
+		Ln, = ax.plot([0],'ro')
+		plt.ion()
+		plt.show()
+
+	# Cleaning the history file
+	for j in range(NUM_ROVERS):
+		file = open(RWD_FILENAME+str(j),'w')
+		file.write("")
+		file.close()
+
+	generation_count = 0
+	mutation_Update = MUTATION_STD
+	for i in range(NUM_GENERATIONS):
+		mutation_Update = max(0.99 * mutation_Update, 0.01)
 		# Generate twice as many NNs doing mutated copies
-		simulator.mutateNNs(MUTATION_STD)
+		simulator.mutateNNs(mutation_Update)
 
 		# Running an episode for each population member
 		for j in range(2*POPULATION_SIZE):
@@ -195,21 +228,32 @@ else:
 			print "Generation %d - Rover %d:" %(generation_count, j),
 			performance_list = simulator.get_performance(j)
 			performance_list.sort()
-			for p in performance_list:
-				print "%.3f " % p,
-			print ""
-			print("Best Performer Score: %s" %max(performance_list))
-			print("Average Performer Score: %s" %np.mean(performance_list))
-			print("Standard Deviation p: %s" %np.std(performance_list))
-			
-		best_perf[i] = max(performance_list)
-		avg_perf[i] = np.mean(performance_list)
-		std_perf[i] = np.std(performance_list)/np.mean(performance_list)
-		plt.plot(np.arange(i+1),best_perf[0:i+1], 'ro')
-		plt.pause(.001)
+			if PLOT_ON:
+				for p in performance_list:
+					print "%.3f " % p,
+				print ""
+				print("Best Performer Score: %s" %max(performance_list))
+				print("Average Performer Score: %s" %np.mean(performance_list))
+				print("Standard Deviation p: %s" %np.std(performance_list))
+				
+			best_perf[j][i] = max(performance_list)
+			avg_perf[j][i] = np.mean(performance_list)
+			std_perf[j][i] = np.std(performance_list)/np.mean(performance_list)
+		if PLOT_ON:
+			for j in range(NUM_ROVERS):
+				plt.plot(np.arange(i+1),best_perf[j][0:i+1], 'o', color = (mutation_Update, 1-mutation_Update, 0) )
+				plt.pause(.001)
 		
-		with open(RESULTS_FILENAME + '.pickle', 'w') as f:
-			pickle.dump([best_perf, avg_perf, std_perf, InputParameters], f)
+			# Writing to the history file
+			file = open(RWD_FILENAME+str(j),'a')
+			wr = csv.writer(file)
+			wr.writerow(performance_list)
+			file.close()
+
+
+		if i%(NUM_GENERATIONS/100) == 0:
+			with open(RESULTS_FILENAME + '.pickle', 'w') as f:
+				pickle.dump([best_perf, avg_perf, std_perf, InputParameters], f)
 
 
 
