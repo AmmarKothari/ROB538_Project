@@ -1,5 +1,6 @@
 from Tkinter import *
 from Simulator import *
+import csv
 import time
 
 # =======================================================
@@ -8,6 +9,7 @@ import time
 
 # File Parameters
 NN_WEIGHTS_FILENAME	= "NN_"
+RWD_FILENAME		= "RWD_"
 
 # NN Parameters
 NN_NUM_INPUT_LRS	= 8
@@ -15,7 +17,7 @@ NN_NUM_OUTPUT_LRS	= 2
 NN_NUM_HIDDEN_LRS	= 3
 
 # Evolution parameters
-POPULATION_SIZE		= 100
+POPULATION_SIZE		= 20
 MUTATION_STD		= 0.05
 NUM_GENERATIONS		= 100000
 
@@ -26,17 +28,17 @@ ROVER_COLOR			= 'orange'
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
-SLEEP_VIEW			= 0.025
-ENABLE_GRAPHICS		= 1	# Enabling graphics will load NNs from file
+SLEEP_VIEW			= 0.250
+ENABLE_GRAPHICS		= 0	# Enabling graphics will load NNs from file
 
 # World parameters
-NUM_SIM_STEPS		= 500
+NUM_SIM_STEPS		= 40
 WORLD_WIDTH			= 240.0
 WORLD_HEIGHT		= 240.0
 NUM_ROVERS			= 1
 NUM_POIS			= 10
-POI_MIN_VEL			= 1.0
-POI_MAX_VEL			= 1.0
+POI_MIN_VEL			= 0.0
+POI_MAX_VEL			= 0.0
 MIN_SENSOR_DIST		= 10
 MAX_SENSOR_DIST		= 500
 
@@ -147,6 +149,12 @@ if ENABLE_GRAPHICS: # Visualizing results
 
 else:	# Evolving new NNs
 
+	# Cleaning the history file
+	for j in range(NUM_ROVERS):
+		file = open(RWD_FILENAME+str(j),'w')
+		file.write("")
+		file.close()
+
 	generation_count = 0
 	for i in range(NUM_GENERATIONS):
 		
@@ -172,5 +180,11 @@ else:	# Evolving new NNs
 			for p in performance_list:
 				print "%.3f " % p,
 			print ""
+
+			# Writing to the history file
+			file = open(RWD_FILENAME+str(j),'a')
+			wr = csv.writer(file)
+			wr.writerow(performance_list)
+			file.close()
 
 		generation_count += 1
