@@ -16,7 +16,7 @@ RWD_FILENAME		= "RWD_"
 LOCAL_REWARD		= 0
 GLOBAL_REWARD		= 1
 DIFF_REWARD			= 2
-RWD_TYPE			= LOCAL_REWARD
+RWD_TYPE			= DIFF_REWARD
 RWD_PATH			= ["LocalRwd", "GlobalRwd", "DiffRwd"]
 
 NN_WEIGHTS_FILENAME = RWD_PATH[RWD_TYPE]+"/"+NN_WEIGHTS_FILENAME
@@ -112,7 +112,7 @@ def draw_world(simulator):
 
 	# Drawing the POIs
 	for poi in simulator.poi_list:
-		canvas.create_polygon(get_points_triangle(poi, l=POI_SIZE), fill=POI_COLOR)
+		canvas.create_polygon(get_points_triangle(poi, l=POI_SIZE), fill="#%x00"%(15*(MIN_SENSOR_DIST**2)*max(poi.obs)))
 
 	# Updating the canvas
 	canvas.update()

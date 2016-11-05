@@ -234,13 +234,13 @@ class Simulator(object):
 			q = utils.get_quadrant(relative_angle) - 1
 
 			# get relative velocity of POI to agent.
-			rel_vel_vect = list(utils.vect_sub(rover.vel_lin, poi.vel_lin))
+			rel_vel_vect = poi.vel_lin
 			rel_pos_vect = utils.vect_sub(rover.pos, poi.pos)
 			rel_pos_norm = utils.get_norm(rel_pos_vect)
 			rel_pos_unit = [rel_pos_vect[0]/rel_pos_norm, rel_pos_vect[1]/rel_pos_norm]
 
 			dot = np.dot(rel_pos_unit, rel_vel_vect)
-			normalized_dot = (dot / rel_pos_norm**2)
+			normalized_dot = poi.value * dot / rel_pos_norm**2
 			sum[q] += normalized_dot
 
 		return list(sum)
