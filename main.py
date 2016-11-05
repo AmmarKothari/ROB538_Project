@@ -16,14 +16,15 @@ RWD_FILENAME		= "RWD_"
 LOCAL_REWARD		= 0
 GLOBAL_REWARD		= 1
 DIFF_REWARD			= 2
-RWD_TYPE			= DIFF_REWARD
+RWD_TYPE			= LOCAL_REWARD
 RWD_PATH			= ["LocalRwd", "GlobalRwd", "DiffRwd"]
 
 NN_WEIGHTS_FILENAME = RWD_PATH[RWD_TYPE]+"/"+NN_WEIGHTS_FILENAME
 RWD_FILENAME		= RWD_PATH[RWD_TYPE]+"/"+RWD_FILENAME
 
 # NN parameters
-NN_IN_LYR_SIZE		= 8
+ENABLE_VEL_SENSING	= 1
+NN_IN_LYR_SIZE		= 12 if ENABLE_VEL_SENSING else 8
 NN_OUT_LYR_SIZE		= 2
 NN_HID_LYR_SIZE		= 3
 
@@ -42,11 +43,11 @@ POI_SIZE			= 3
 SLEEP_VIEW			= 0.100
 
 # World parameters
-NUM_SIM_STEPS		= 40
+NUM_SIM_STEPS		= 50
 WORLD_WIDTH			= 200.0
 WORLD_HEIGHT		= 200.0
-NUM_ROVERS			= 3
-NUM_POIS			= 10
+NUM_ROVERS			= 5
+NUM_POIS			= 5
 POI_MIN_VEL			= 0.0
 POI_MAX_VEL			= 1.0
 MIN_SENSOR_DIST		= 5
@@ -57,6 +58,7 @@ RND_START_EPISODE	= 1
 RND_START_ALL		= 1
 INPUT_SCALING		= 100
 OUTPUT_SCALING		= 5
+STEERING_ONLY		= -5.0
 
 # Enabling/disabling evolution with command line parameter
 if len(sys.argv) > 1 and sys.argv[1][0] == '-' and sys.argv[1][1] == 'e':
@@ -130,12 +132,13 @@ def execute_episode(pop_set):
 
 	# Running through each simulation step
 	for i in range(NUM_SIM_STEPS):
-		simulator.sim_step(pop_set)
+		simulator.sim_step(pop_set, STEERING_ONLY)
 		if disable_evol:
 			draw_world(simulator)
 			time.sleep(SLEEP_VIEW)
 
 	# Computing reward
+	simulator.compute_global_reward(pop_set)
 	if RWD_TYPE == LOCAL_REWARD:
 		simulator.local_reward(pop_set)
 	if RWD_TYPE == GLOBAL_REWARD:
@@ -177,11 +180,14 @@ if disable_evol: # Visualizing results
 
 else:	# Evolving new NNs
 
-	# Cleaning the history file
+	# Cleaning the history files
 	for j in range(NUM_ROVERS):
 		file = open(RWD_FILENAME+str(j),'w')
 		file.write("")
 		file.close()
+	file = open(RWD_FILENAME+'G','w')
+	file.write("")
+	file.close()
 
 	generation_count = 0
 	for i in range(NUM_GENERATIONS):
@@ -214,5 +220,14 @@ else:	# Evolving new NNs
 			wr = csv.writer(file)
 			wr.writerow(performance_list)
 			file.close()
+
+		# Writing global reward to the history file
+		global_rwd_list = []
+		for j in range(POPULATION_SIZE):
+			global_rwd_list.append(simulator.global_rwd)
+		file = open(RWD_FILENAME+'G','a')
+		wr = csv.writer(file)
+		wr.writerow(global_rwd_list)
+		file.close()
 
 		generation_count += 1

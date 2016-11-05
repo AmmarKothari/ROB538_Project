@@ -25,10 +25,11 @@ def check_quadrant(angle, quadrant):
     else:
         return False
 
+
 def get_quadrant(angle):
     step = math.pi/4
 
-    quadrants = [3, 2, 2, 1, 1, 4, 4, 3]
+    quadrants = [1, 2, 2, 3, 3, 4, 4, 1]
 
     i = angle // step
     if math.isnan(i):

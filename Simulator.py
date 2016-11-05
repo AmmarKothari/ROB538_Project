@@ -28,6 +28,7 @@ class Simulator(object):
 		self.world_height		= world_height
 		self.rover_list			= []
 		self.poi_list			= []
+		self.global_rwd			= 0
 
 
 	# Initialize world
@@ -84,7 +85,7 @@ class Simulator(object):
 			self.rover_list[i].population[-1].store_weights(filename+"R"+str(i)+"_")
 
 	# Iterate the world simulation
-	def sim_step(self, pop_set):
+	def sim_step(self, pop_set, steering_only):
 
 		# POIs step
 		for poi in self.poi_list:
@@ -94,21 +95,18 @@ class Simulator(object):
 		for rover in self.rover_list:
 			inputs = self.return_NN_inputs(rover)
 			outputs = rover.population[pop_set].forward(inputs)
-			rover.sim_step(outputs)
+			rover.sim_step(outputs, steering_only)
 
 		# Compute rover observation values of POIs
 		for poi in self.poi_list:
 			for i in range(len(self.rover_list)):
-				poi.obs[i] = utils.cap_distance(poi.pos, self.rover_list[i].pos, self.min_sensor_dist)
+				new_value = utils.cap_distance(poi.pos, self.rover_list[i].pos, self.min_sensor_dist)
+				if new_value > poi.obs[i]:
+					poi.obs[i] = new_value
 
 	# =======================================================
 	# Rewards
 	# =======================================================
-
-	# Local reward
-	def local_reward(self, pop_set):
-		for poi in self.poi_list:
-			self.rover_list[np.argmax(poi.obs)].population[pop_set].performance += np.max(poi.obs)
 
 	# Global reward computation
 	def compute_global_reward(self, pop_set, excluded_rover=-1):
@@ -125,25 +123,25 @@ class Simulator(object):
 			# Getting the max reward
 			reward += np.max(aux)
 
+		if excluded_rover < 0:
+			self.global_rwd = reward
+
 		return reward
 
-	# Global reward
+	# Assign local reward
+	def local_reward(self, pop_set):
+		for poi in self.poi_list:
+			self.rover_list[np.argmax(poi.obs)].population[pop_set].performance += np.max(poi.obs)
+
+	# Assign global reward
 	def global_reward(self, pop_set):
-
-		global_rwd = self.compute_global_reward(pop_set)
-
-		# Assigning global reward
 		for rover in self.rover_list:
-			rover.population[pop_set].performance = global_rwd
+			rover.population[pop_set].performance = self.global_rwd
 
-	# Differential reward
+	# Assign differential reward
 	def diff_reward(self, pop_set):
-
-		global_rwd = self.compute_global_reward(pop_set)
-
-		# global_reward(pop_set) - 
 		for i in range(len(self.rover_list)):
-			self.rover_list[i].population[pop_set].performance = global_rwd - self.compute_global_reward(pop_set, i)
+			self.rover_list[i].population[pop_set].performance = self.global_rwd - self.compute_global_reward(pop_set, i)
 
 	# =======================================================
 	# =======================================================
@@ -197,6 +195,7 @@ class Simulator(object):
 		for poi in self.poi_list:
 			poi.pos			= poi.init_pos
 			poi.heading		= poi.init_head
+			poi.obs			= np.zeros(self.num_rovers)
 			if rnd_pois:
 				poi.pos		= random.randint(0,self.world_width), random.randint(0,self.world_height)
 				poi.heading	= random.randint(0,360)
@@ -220,38 +219,31 @@ class Simulator(object):
 				if utils.check_quadrant(relative_angle, quadrant):
 					sum += agent.value*utils.cap_distance(agent.pos, rover.pos, self.min_sensor_dist)
 		return sum
-	
-	def return_POI_vel(self, poiList, max_dist = 500):
-                min_dist = 10
-                sum = np.zeros([4,2])
-                count = np.zeros(4)
-                for poi in poiList:
-                	rover_pos = rover.pos
-                    	# get quadrant of POI
-                	if math.isnan(rover.pos[0]):
-                		rover_pos = [0,0]
-                	vect = utils.vect_sub(poi.pos, rover_pos)
-                	dist = max(utils.get_norm(vect), MIN_SENSOR_DIST)
-                	dist_2 = dist ** 2
-                    angle = utils.get_angle(vect) % (2*math.pi ) # Between 0 to 2pi
-                    relative_angle = (angle - self.heading + math.pi/2) % (2*math.pi)
-                    q = utils.get_quadrant(relative_angle) - 1
-                    
-                    #get relative velocity of POI to agent.
-                    poi_vel_vect = np.array(poi.vel_lin)
-                    rover_vel_vect = np.array(rover.vel_lin)
-                    rel_vel_vect = rover_vel_vect - poi_vel_vect
-                    if rover.pos[0] < poi.pos[0]:
-				rel_vel_vect[0] *= -1
-                    if rover.pos[1] < poi.pos[1]:
-                		rel_vel_vect[1] *= -1
 
-                    # update average velocity vector
-                    count[q] += 1
-                    sum[q][0] = (sum[q][0] * (count[q] - 1) + rel_vel_vect[0]/dist_2) / count[q]
-                    sum[q][1] = (sum[q][1] * (count[q] - 1) + rel_vel_vect[1]/dist_2) / count[q]
+	def measure_velocity_sensor(self, poiList, rover):
+		min_dist = self.min_sensor_dist
+		max_dist = self.max_sensor_dist
+		sum = np.zeros(4)
+		for poi in poiList:
 
-                return sum
+			# get quadrant of POI
+			vect = utils.vect_sub(poi.pos, rover.pos)
+			dist = utils.get_norm(vect)
+			angle = utils.get_angle(vect) % (2 * math.pi)  # Between 0 to 2pi
+			relative_angle = (angle - rover.heading + math.pi / 2) % (2 * math.pi)
+			q = utils.get_quadrant(relative_angle) - 1
+
+			# get relative velocity of POI to agent.
+			rel_vel_vect = list(utils.vect_sub(rover.vel_lin, poi.vel_lin))
+			rel_pos_vect = utils.vect_sub(rover.pos, poi.pos)
+			rel_pos_norm = utils.get_norm(rel_pos_vect)
+			rel_pos_unit = [rel_pos_vect[0]/rel_pos_norm, rel_pos_vect[1]/rel_pos_norm]
+
+			dot = np.dot(rel_pos_unit, rel_vel_vect)
+			normalized_dot = (dot / rel_pos_norm**2)
+			sum[q] += normalized_dot
+
+		return list(sum)
 	
 	# Gathering all sensor measurements
 	def return_NN_inputs(self, rover):
@@ -265,6 +257,9 @@ class Simulator(object):
 		# Sensing POIs
 		for i in range(4):
 			inputs.append(self.measure_sensor(self.poi_list, i, rover))
+
+		# Sensing POI velocity
+		inputs = inputs + self.measure_velocity_sensor(self.poi_list, rover)
 
 		# print inputs
 		return inputs
@@ -354,7 +349,7 @@ class Rover(Agent):
 		self.holonomic = holonomic
 
 	# Simulation step for the rovers
-	def sim_step(self, nn_outputs):
+	def sim_step(self, nn_outputs, steering_only):
 
 		# print self.vel_ang, utils.get_norm(self.vel_lin)
 		if self.holonomic:
@@ -362,7 +357,10 @@ class Rover(Agent):
 			self.update_pos();
 		else:
 			self.vel_ang = nn_outputs[0]
-			self.set_vel_lin(nn_outputs[1])
+			if steering_only >= 0:
+				self.set_vel_lin(steering_only)
+			else:
+				self.set_vel_lin(nn_outputs[1])
 			self.update_heading();
 			self.update_pos();
 # =======================================================
