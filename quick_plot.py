@@ -53,7 +53,11 @@ trunc = len(vals_max[0]) % 10
 average_vals = list()
 std_vals = list()
 for i in range(len(vals_max)):
-	reshaped_vals = np.reshape(vals_max[i][:-trunc],(-1,10))
+	if trunc == 0:
+		reshaped_vals = np.reshape(vals_max[i][:],(-1,10))
+	else:
+		reshaped_vals = np.reshape(vals_max[i][:-trunc],(-1,10))
+
 	average_vals.append(np.mean(reshaped_vals, axis = 0))
 	std_vals.append(np.std(reshaped_vals, axis = 0))
 	plt.errorbar(np.arange(POINTS_GRAPH), average_vals[i], yerr = std_vals[i], label = names[i].split('/')[-1])
