@@ -1,6 +1,7 @@
 __author__ = "Ovunc Tuzel"
 
 import random, math, utils
+import numpy as np
 from NN_Unsupervised import NeuralNet
 from operator import attrgetter
 import copy
@@ -95,13 +96,10 @@ class Simulator(object):
 			outputs = rover.population[pop_set].forward(inputs)
 			rover.sim_step(outputs)
 
-		# Compute closest rover to POIs
+		# Compute rover observation values of POIs
 		for poi in self.poi_list:
 			for i in range(len(self.rover_list)):
-				value = utils.cap_distance(poi.pos, self.rover_list[i].pos, self.min_sensor_dist)
-				if value > poi.best_sample:
-					poi.best_sample = value
-					poi.best_rover = i
+				poi.obs[i] = utils.cap_distance(poi.pos, self.rover_list[i].pos, self.min_sensor_dist)
 
 	# =======================================================
 	# Rewards
@@ -110,25 +108,42 @@ class Simulator(object):
 	# Local reward
 	def local_reward(self, pop_set):
 		for poi in self.poi_list:
-			if poi.best_rover > -1:
-				self.rover_list[poi.best_rover].population[pop_set].performance += poi.best_sample
+			self.rover_list[np.argmax(poi.obs)].population[pop_set].performance += np.max(poi.obs)
+
+	# Global reward computation
+	def compute_global_reward(self, pop_set, excluded_rover=-1):
+		reward = 0
+		for poi in self.poi_list:
+			
+			# Observations to this POI
+			aux = poi.obs
+
+			# Eliminating excluded_rover observations
+			if excluded_rover > -1:
+				aux[excluded_rover] = 0
+
+			# Getting the max reward
+			reward += np.max(aux)
+
+		return reward
 
 	# Global reward
 	def global_reward(self, pop_set):
 
-		# Computing global reward
-		reward = 0
-		for poi in self.poi_list:
-			reward += poi.best_sample
+		global_rwd = self.compute_global_reward(pop_set)
 
 		# Assigning global reward
 		for rover in self.rover_list:
-			rover.population[pop_set].performance = reward
+			rover.population[pop_set].performance = global_rwd
 
 	# Differential reward
 	def diff_reward(self, pop_set):
-		for rover in self.rover_list:
-			rover.population[pop_set].performance = 0
+
+		global_rwd = self.compute_global_reward(pop_set)
+
+		# global_reward(pop_set) - 
+		for i in range(len(self.rover_list)):
+			self.rover_list[i].population[pop_set].performance = global_rwd - self.compute_global_reward(pop_set, i)
 
 	# =======================================================
 	# =======================================================
@@ -167,7 +182,7 @@ class Simulator(object):
 
 	# Registering new POI
 	def add_poi(self, x=0, y=0, heading=0, value=1.0):
-		self.poi_list.append(Poi(x, y, heading, value))
+		self.poi_list.append(Poi(x, y, heading, value, self.num_rovers))
 
 
 	# Registering new rover
@@ -180,8 +195,6 @@ class Simulator(object):
 
 		# Resetting POIs
 		for poi in self.poi_list:
-			poi.best_sample	= 0
-			poi.best_rover	= -1
 			poi.pos			= poi.init_pos
 			poi.heading		= poi.init_head
 			if rnd_pois:
@@ -314,10 +327,9 @@ class Agent(object):
 # POI agent
 # =======================================================
 class Poi(Agent):
-	def __init__(self, posx, posy, heading, value):
+	def __init__(self, posx, posy, heading, value, num_rovers):
 		Agent.__init__(self, posx, posy, heading, value)
-		self.best_sample = 0
-		self.best_rover = -1
+		self.obs = np.zeros(num_rovers)
 
 	# Simulation step for the POIs
 	def sim_step(self, world_width, world_height):
