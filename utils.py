@@ -1,5 +1,9 @@
 import math
 
+def cap_distance(vect1, vect2, min_dist):
+    dist = max(get_norm(vect_sub(vect1, vect2)), min_dist)
+    return 1.0 / dist**2
+
 def get_norm(vect):
     return (vect[0] ** 2 + vect[1] ** 2) ** 0.5
 

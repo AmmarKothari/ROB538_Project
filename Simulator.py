@@ -92,11 +92,46 @@ class Simulator(object):
 		# Rovers step
 		for rover in self.rover_list:
 			inputs = self.return_NN_inputs(rover)
-			rover.population[pop_set].performance += sum(inputs[4:7]) #???#
 			outputs = rover.population[pop_set].forward(inputs)
-			# print outputs
 			rover.sim_step(outputs)
 
+		# Compute closest rover to POIs
+		for poi in self.poi_list:
+			for i in range(len(self.rover_list)):
+				value = utils.cap_distance(poi.pos, self.rover_list[i].pos, self.min_sensor_dist)
+				if value > poi.best_sample:
+					poi.best_sample = value
+					poi.best_rover = i
+
+	# =======================================================
+	# Rewards
+	# =======================================================
+
+	# Local reward
+	def local_reward(self, pop_set):
+		for poi in self.poi_list:
+			if poi.best_rover > -1:
+				self.rover_list[poi.best_rover].population[pop_set].performance += poi.best_sample
+
+	# Global reward
+	def global_reward(self, pop_set):
+
+		# Computing global reward
+		reward = 0
+		for poi in self.poi_list:
+			reward += poi.best_sample
+
+		# Assigning global reward
+		for rover in self.rover_list:
+			rover.population[pop_set].performance = reward
+
+	# Differential reward
+	def diff_reward(self, pop_set):
+		for rover in self.rover_list:
+			rover.population[pop_set].performance = 0
+
+	# =======================================================
+	# =======================================================
 
 	# Initialize NNs for each rover
 	def initRoverNNs(self, pop_size, inputLayers, outputLayers, hiddenLayers, input_scaling, output_scaling):
@@ -145,8 +180,10 @@ class Simulator(object):
 
 		# Resetting POIs
 		for poi in self.poi_list:
-			poi.pos		= poi.init_pos
-			poi.heading	= poi.init_head
+			poi.best_sample	= 0
+			poi.best_rover	= -1
+			poi.pos			= poi.init_pos
+			poi.heading		= poi.init_head
 			if rnd_pois:
 				poi.pos		= random.randint(0,self.world_width), random.randint(0,self.world_height)
 				poi.heading	= random.randint(0,360)
@@ -165,15 +202,10 @@ class Simulator(object):
 		sum = 0
 		for agent in agentList:
 			if agent != rover:
-				vect = utils.vect_sub(agent.pos, rover.pos)
-				dist = utils.get_norm(vect)
-				angle = utils.get_angle(vect)
+				angle = utils.get_angle(utils.vect_sub(agent.pos, rover.pos))
 				relative_angle = (angle - rover.heading) % (2*math.pi)
-				# print angle* 180 / math.pi, relative_angle * 180 / math.pi
-
-				if dist < self.max_sensor_dist and utils.check_quadrant(relative_angle, quadrant):
-					# print 'IN QUADRANT: ', quadrant
-					sum += agent.value / max(dist**2, self.min_sensor_dist**2)
+				if utils.check_quadrant(relative_angle, quadrant):
+					sum += agent.value*utils.cap_distance(agent.pos, rover.pos, self.min_sensor_dist)
 		return sum
 	
 	def return_POI_vel(self, poiList, max_dist = 500):
@@ -284,6 +316,8 @@ class Agent(object):
 class Poi(Agent):
 	def __init__(self, posx, posy, heading, value):
 		Agent.__init__(self, posx, posy, heading, value)
+		self.best_sample = 0
+		self.best_rover = -1
 
 	# Simulation step for the POIs
 	def sim_step(self, world_width, world_height):

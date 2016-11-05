@@ -5,7 +5,7 @@ clc;
 % File Params
 FILENAME  = '../RWD_0';
 
-AV_WINDOW = 20;
+AV_WINDOW = 100;
 
 file = csvread(FILENAME);
 

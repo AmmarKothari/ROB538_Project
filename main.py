@@ -8,11 +8,21 @@ import time
 # Parameters
 # =======================================================
 
-# File Parameters
+# File parameters
 NN_WEIGHTS_FILENAME	= "NN_"
 RWD_FILENAME		= "RWD_"
 
-# NN Parameters
+# Reward parameters
+LOCAL_REWARD		= 0
+GLOBAL_REWARD		= 1
+DIFF_REWARD			= 2
+RWD_TYPE			= GLOBAL_REWARD
+RWD_PATH			= ["LocalRwd", "GlobalRwd", "DiffRwd"]
+
+NN_WEIGHTS_FILENAME = RWD_PATH[RWD_TYPE]+"/"+NN_WEIGHTS_FILENAME
+RWD_FILENAME		= RWD_PATH[RWD_TYPE]+"/"+RWD_FILENAME
+
+# NN parameters
 NN_IN_LYR_SIZE		= 8
 NN_OUT_LYR_SIZE		= 2
 NN_HID_LYR_SIZE		= 3
@@ -124,6 +134,14 @@ def execute_episode(pop_set):
 		if disable_evol:
 			draw_world(simulator)
 			time.sleep(SLEEP_VIEW)
+
+	# Computing reward
+	if RWD_TYPE == LOCAL_REWARD:
+		simulator.local_reward(pop_set)
+	if RWD_TYPE == GLOBAL_REWARD:
+		simulator.global_reward(pop_set)
+	if RWD_TYPE == DIFF_REWARD:
+		simulator.diff_reward(pop_set)
 
 
 # =======================================================
