@@ -36,11 +36,15 @@ class Simulator(object):
 
 		# Initializing rovers
 		for i in range(self.num_rovers):
-			self.add_rover(random.randint(0, self.world_height), random.randint(0, self.world_width), 0, holonomic)
+			px = np.random.normal(loc =self.world_width/2, scale =1.0);
+			py = np.random.normal(loc =self.world_height/2, scale =1.0);
+			self.add_rover(px, py, 0, holonomic)
 
 		# Initializing POIs
 		for i in range(self.num_pois):
-			self.add_poi(random.randint(0, self.world_height), random.randint(0, self.world_width), random.randint(0, 360))
+			px = self.world_width/2+random.randint(-35, 35)
+			px = self.world_height/2+random.randint(-35, 35)
+			self.add_poi(px,py, random.randint(0, 360))
 
 		# Setting POIs initial velocities
 		for poi in self.poi_list:
@@ -85,7 +89,7 @@ class Simulator(object):
 			self.rover_list[i].population[-1].store_weights(filename+"R"+str(i)+"_")
 
 	# Iterate the world simulation
-	def sim_step(self, pop_set, steering_only):
+	def sim_step(self, pop_set, steering_only, max_dist_d, sensing_vel):
 
 		# POIs step
 		for poi in self.poi_list:
@@ -93,8 +97,9 @@ class Simulator(object):
 
 		# Rovers step
 		for rover in self.rover_list:
-			inputs = self.return_NN_inputs(rover)
+			inputs = self.return_NN_inputs(rover, sensing_vel)
 			outputs = rover.population[pop_set].forward(inputs)
+			outputs = 2*max_dist_d*(outputs-0.5)
 			rover.sim_step(outputs, steering_only)
 
 		# Compute rover observation values of POIs
@@ -197,7 +202,9 @@ class Simulator(object):
 			poi.heading		= poi.init_head
 			poi.obs			= np.zeros(self.num_rovers)
 			if rnd_pois:
-				poi.pos		= random.randint(0,self.world_width), random.randint(0,self.world_height)
+				px = self.world_width/2+random.randint(-35, 35)
+				py = self.world_height/2+random.randint(-35, 35)
+				poi.pos = px, py
 				poi.heading	= random.randint(0,360)
 
 		# Resetting Rovers
@@ -205,7 +212,9 @@ class Simulator(object):
 			rover.pos		= rover.init_pos
 			rover.heading 	= rover.init_head
 			if rnd_rover_pos:
-				rover.pos = random.randint(0,self.world_width), random.randint(0,self.world_height)
+				px = np.random.normal(loc =self.world_width/2, scale =1.0);
+				py = np.random.normal(loc =self.world_height/2, scale =1.0);
+				rover.pos	= px, py
 				if not rover.holonomic:
 					rover.heading = random.randint(0, 360)
 
@@ -246,7 +255,7 @@ class Simulator(object):
 		return list(sum)
 	
 	# Gathering all sensor measurements
-	def return_NN_inputs(self, rover):
+	def return_NN_inputs(self, rover, sensing_vel):
 
 		inputs = []
 
@@ -259,7 +268,8 @@ class Simulator(object):
 			inputs.append(self.measure_sensor(self.poi_list, i, rover))
 
 		# Sensing POI velocity
-		inputs = inputs + self.measure_velocity_sensor(self.poi_list, rover)
+		if sensing_vel:
+			inputs = inputs + self.measure_velocity_sensor(self.poi_list, rover)
 
 		# print inputs
 		return inputs

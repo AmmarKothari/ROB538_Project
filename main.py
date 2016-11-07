@@ -23,14 +23,14 @@ NN_WEIGHTS_FILENAME = RWD_PATH[RWD_TYPE]+"/"+NN_WEIGHTS_FILENAME
 RWD_FILENAME		= RWD_PATH[RWD_TYPE]+"/"+RWD_FILENAME
 
 # NN parameters
-ENABLE_VEL_SENSING	= 1
+ENABLE_VEL_SENSING	= 0
 NN_IN_LYR_SIZE		= 12 if ENABLE_VEL_SENSING else 8
 NN_OUT_LYR_SIZE		= 2
-NN_HID_LYR_SIZE		= 3
+NN_HID_LYR_SIZE		= 10
 
 # Evolution parameters
 POPULATION_SIZE		= 10
-MUTATION_STD		= 0.15
+MUTATION_STD		= 0.10
 NUM_GENERATIONS		= 100000
 
 # Graphics parameters
@@ -41,24 +41,26 @@ POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
 SLEEP_VIEW			= 0.100
+ZOOM				= 8.0
 
 # World parameters
-NUM_SIM_STEPS		= 50
-WORLD_WIDTH			= 200.0
-WORLD_HEIGHT		= 200.0
-NUM_ROVERS			= 5
-NUM_POIS			= 5
+NUM_SIM_STEPS		= 15
+WORLD_WIDTH			= 115.0
+WORLD_HEIGHT		= 100.0
+NUM_ROVERS			= 30
+NUM_POIS			= 100
 POI_MIN_VEL			= 0.0
-POI_MAX_VEL			= 1.0
+POI_MAX_VEL			= 0.0
 MIN_SENSOR_DIST		= 5
 MAX_SENSOR_DIST		= 500
 
 HOLONOMIC_ROVER		= 1
 RND_START_EPISODE	= 1
 RND_START_ALL		= 1
-INPUT_SCALING		= 100
-OUTPUT_SCALING		= 5
+INPUT_SCALING		= 1
+OUTPUT_SCALING		= 1
 STEERING_ONLY		= -5.0
+MAX_DIST_D			= 10.0
 
 # Enabling/disabling evolution with command line parameter
 if len(sys.argv) > 1 and sys.argv[1][0] == '-' and sys.argv[1][1] == 'e':
@@ -87,13 +89,13 @@ def init_canvas():
 	global canvas
 	master_window = Tk()
 	master_window.title(WINDOW_TITLE)
-	canvas = Canvas(master_window, width=WORLD_WIDTH, height=WORLD_HEIGHT, background=BKG_COLOR)
+	canvas = Canvas(master_window, width=ZOOM*WORLD_WIDTH, height=ZOOM*WORLD_HEIGHT, background=BKG_COLOR)
 	canvas.pack()
 
 # Points for drawing agent's body
 def get_points_triangle(agent, l=5):
-	x = agent.pos[0]
-	y = agent.pos[1]
+	x = ZOOM*agent.pos[0]
+	y = ZOOM*agent.pos[1]
 	t = agent.heading
 	p1 = [x + l * math.sin(t), y - l * math.cos(t)]
 	p2 = [x - l * math.sin(t), y + l * math.cos(t)]
@@ -132,7 +134,7 @@ def execute_episode(pop_set):
 
 	# Running through each simulation step
 	for i in range(NUM_SIM_STEPS):
-		simulator.sim_step(pop_set, STEERING_ONLY)
+		simulator.sim_step(pop_set, STEERING_ONLY, MAX_DIST_D, ENABLE_VEL_SENSING)
 		if disable_evol:
 			draw_world(simulator)
 			time.sleep(SLEEP_VIEW)
@@ -198,8 +200,10 @@ else:	# Evolving new NNs
 		simulator.mutateNNs(MUTATION_STD)
 
 		# Running an episode for each population member
+		global_rwd_list = []
 		for j in range(2*POPULATION_SIZE):
 			execute_episode(j)
+			global_rwd_list.append(simulator.global_rwd)
 
 		# Selecting best weights
 		simulator.select()
@@ -222,9 +226,6 @@ else:	# Evolving new NNs
 			file.close()
 
 		# Writing global reward to the history file
-		global_rwd_list = []
-		for j in range(POPULATION_SIZE):
-			global_rwd_list.append(simulator.global_rwd)
 		file = open(RWD_FILENAME+'G','a')
 		wr = csv.writer(file)
 		wr.writerow(global_rwd_list)

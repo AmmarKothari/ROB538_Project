@@ -3,9 +3,9 @@ close all;
 clc;
 
 % File Params
-FILENAME  = '../GlobalRwd/RWD_0';
+FILENAME  = '../DiffRwd/RWD_0';
 
-AV_WINDOW = 50;
+AV_WINDOW = 10;
 
 file = csvread(FILENAME);
 

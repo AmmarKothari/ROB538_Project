@@ -33,13 +33,16 @@ class NeuralNet(object):
 		# Output weighting 
 		yHat = np.dot(self.a2, self.W2)
 
+		# Sigmoid activation function for the output 
+		yHat = self.sigmoid(yHat)
+
 		# Scaling outputs
 		yHat *= self.output_scaling
 
 		return yHat
 
 	def sigmoid(self, z):
-		return 1/(1 + np.exp(-z))-0.5
+		return 1/(1 + np.exp(-z))
 
 	def perturb_weights(self, mutation_std):
 		self.W1 = np.random.normal(loc =self.W1, scale =mutation_std, size=(self.inputLayerSize,self.hiddenLayerSize))
