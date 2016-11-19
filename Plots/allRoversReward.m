@@ -3,7 +3,7 @@ close all;
 clc;
 
 % File Params
-FILENAME = {'../LocalRwd/RWD_', '../GlobalRwd/RWD_', '../DiffRwd/RWD_'};
+FILENAME = {'../	/RWD_', '../GlobalRwd/RWD_', '../DiffRwd/RWD_'};
 FILENAME  = FILENAME{2};
 
 AV_WINDOW = 50;

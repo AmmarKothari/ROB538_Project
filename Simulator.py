@@ -5,6 +5,7 @@ import numpy as np
 from NN_Unsupervised import NeuralNet
 from operator import attrgetter
 import copy
+import random
 
 # =======================================================
 # Simulator
@@ -43,7 +44,7 @@ class Simulator(object):
 		# Initializing POIs
 		for i in range(self.num_pois):
 			px = self.world_width/2+random.randint(-35, 35)
-			px = self.world_height/2+random.randint(-35, 35)
+			py = self.world_height/2+random.randint(-35, 35)
 			self.add_poi(px,py, random.randint(0, 360))
 
 		# Setting POIs initial velocities
@@ -51,15 +52,16 @@ class Simulator(object):
 			poi.heading = random.randint(0, 360)
 			poi.set_vel_lin(random.uniform(poi_min_vel, poi_max_vel))
 
-	def init_world_custom(self, poi_min_vel, poi_max_vel, poi_locations, rover_locations):
+	def init_world_custom(self, poi_min_vel, poi_max_vel, poi_init_pos, rover_init_pos):
 
 		# Initializing rovers
 		for i in range(self.num_rovers):
-			self.add_rover(rover_locations[i][0], rover_locations[i][1], rover_locations[i][2])
+			# self.add_rover(0,0,0)
+			self.add_rover(rover_init_pos[0][0], rover_init_pos[0][1], rover_init_pos[0][2])
 
 		# Initializing POIs
 		for i in range(self.num_pois):
-			self.add_poi(poi_locations[i][0], poi_locations[i][1], poi_locations[i][2])
+			self.add_poi(poi_init_pos[i][0], poi_init_pos[i][1], poi_init_pos[i][2])
 
 		# Setting POIs initial velocities
 		for poi in self.poi_list:
@@ -71,9 +73,9 @@ class Simulator(object):
 			rover.population[pop_set].performance = 0
 
 	# Reset performance counter
-	def get_performance(self, roverNum):
+	def get_performance(self, nn_list):
 		performance = []
-		for nn in self.rover_list[roverNum].population:
+		for nn in nn_list:
 			performance.append(nn.performance)
 		return performance
 
@@ -159,26 +161,28 @@ class Simulator(object):
 
 
 	# Initialize NNs for each rover
-	def mutateNNs(self, mutation_std):
+	def mutateNNs(self, mutation_std,k=None):
 		for rover in self.rover_list:
-			mutantlist = []
-			for nn in rover.population:
-				mutant = copy.deepcopy(nn)
-				mutant.perturb_weights(mutation_std)
-				mutantlist.append(mutant)
-			rover.population += mutantlist
+			childlist = []
+			parents = random.sample(rover.population,k)
+			for parent in parents:
+				child = copy.deepcopy(parent)
+				child.perturb_weights(mutation_std)
+				childlist.append(child)
+			rover.population += childlist
 
 	# Selecting best NNs
-	def select(self):
+	def select(self,k=None):
+
+		if k == None:
+			k = len(rover.population)/2
 
 		# Retain k best
 		for rover in self.rover_list:
-			rover.population = self.remove_worst(rover.population)
+			rover.population = self.remove_worst(rover.population,k)
 
 	# Removing the worst performing rover
-	def remove_worst(self, nn_list, k=None):
-		if k == None:
-			k = len(nn_list)/2
+	def remove_worst(self, nn_list, k):
 		nn_list = sorted(nn_list, key=attrgetter('performance'))
 		del nn_list[:k]
 		return nn_list

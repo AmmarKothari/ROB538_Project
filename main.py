@@ -1,16 +1,14 @@
 from Tkinter import *
 from Simulator import *
+import os
 import sys
 import csv
 import time
+import math
 
 # =======================================================
 # Parameters
 # =======================================================
-
-# File parameters
-NN_WEIGHTS_FILENAME	= "NN_"
-RWD_FILENAME		= "RWD_"
 
 # Reward parameters
 LOCAL_REWARD		= 0
@@ -19,6 +17,9 @@ DIFF_REWARD			= 2
 RWD_TYPE			= DIFF_REWARD
 RWD_PATH			= ["LocalRwd", "GlobalRwd", "DiffRwd"]
 
+# File parameters
+NN_WEIGHTS_FILENAME	= "nn_weights/NN_"
+RWD_FILENAME		= "SYS_RWD"
 NN_WEIGHTS_FILENAME = RWD_PATH[RWD_TYPE]+"/"+NN_WEIGHTS_FILENAME
 RWD_FILENAME		= RWD_PATH[RWD_TYPE]+"/"+RWD_FILENAME
 
@@ -30,8 +31,10 @@ NN_HID_LYR_SIZE		= 10
 
 # Evolution parameters
 POPULATION_SIZE		= 10
-MUTATION_STD		= 0.10
+MUTATION_STD		= 0.001
 NUM_GENERATIONS		= 100000
+REMOVE_RATIO		= 0.10
+NUM_REMOVE			= int(REMOVE_RATIO*POPULATION_SIZE)
 
 # Graphics parameters
 WINDOW_TITLE		= "Rob538 Project - Rover Domain"
@@ -44,19 +47,19 @@ SLEEP_VIEW			= 0.100
 ZOOM				= 8.0
 
 # World parameters
-NUM_SIM_STEPS		= 15
+NUM_SIM_STEPS		= 30
 WORLD_WIDTH			= 115.0
 WORLD_HEIGHT		= 100.0
-NUM_ROVERS			= 30
-NUM_POIS			= 100
+NUM_ROVERS			= 1
+NUM_POIS			= 6**2
 POI_MIN_VEL			= 0.0
 POI_MAX_VEL			= 0.0
 MIN_SENSOR_DIST		= 5
 MAX_SENSOR_DIST		= 500
 
 HOLONOMIC_ROVER		= 1
-RND_START_EPISODE	= 1
-RND_START_ALL		= 1
+RND_START_EPISODE	= 0
+RND_START			= 0
 INPUT_SCALING		= 1
 OUTPUT_SCALING		= 1
 STEERING_ONLY		= -5.0
@@ -71,12 +74,14 @@ else:
 	disable_evol = 1
 
 # For custom agent initialization
-POI_LOCATIONS = [(25,	 25,	1),
-			 	 (120,	 25,	1),
-				 (80,	100,	2),
-				 (50,	120,	3)]
-
-ROVER_LOCATIONS = [(120, 120, 0)]
+poi_init_pos = []
+num_pois_side = int(math.floor(math.sqrt(NUM_POIS)))
+for i in range(num_pois_side):
+	for j in range(num_pois_side):
+		pos_i = MAX_DIST_D*i + WORLD_WIDTH/2 - MAX_DIST_D*num_pois_side/2
+		pos_j = MAX_DIST_D*j + WORLD_HEIGHT/2 - MAX_DIST_D*num_pois_side/2
+		poi_init_pos.append((pos_i,pos_j,0))
+rover_init_pos = [(WORLD_WIDTH/2, WORLD_HEIGHT/2, 0)]
 
 # =======================================================
 # Graphics
@@ -164,10 +169,10 @@ simulator = Simulator(
 		world_width 		= WORLD_WIDTH,
 		world_height 		= WORLD_HEIGHT)
 
-if RND_START_ALL:
+if RND_START:
 	simulator.init_world(POI_MIN_VEL, POI_MAX_VEL, HOLONOMIC_ROVER)
 else:
-	simulator.init_world_custom(POI_MIN_VEL, POI_MAX_VEL, POI_LOCATIONS, ROVER_LOCATIONS)
+	simulator.init_world_custom(POI_MIN_VEL, POI_MAX_VEL, poi_init_pos, rover_init_pos)
 
 simulator.initRoverNNs(POPULATION_SIZE, NN_IN_LYR_SIZE, NN_OUT_LYR_SIZE, NN_HID_LYR_SIZE, INPUT_SCALING, OUTPUT_SCALING)
 
@@ -183,52 +188,40 @@ if disable_evol: # Visualizing results
 else:	# Evolving new NNs
 
 	# Cleaning the history files
-	for j in range(NUM_ROVERS):
-		file = open(RWD_FILENAME+str(j),'w')
-		file.write("")
-		file.close()
-	file = open(RWD_FILENAME+'G','w')
-	file.write("")
-	file.close()
+	os.system("rm "+RWD_FILENAME)
+	os.system("rm "+RWD_PATH[RWD_TYPE]+"/nn_weights/*")
 
 	generation_count = 0
 	for i in range(NUM_GENERATIONS):
 		
 		print "Generation %d" % generation_count
 
-		# Generate twice as many NNs doing mutated copies
-		simulator.mutateNNs(MUTATION_STD)
-
 		# Running an episode for each population member
 		global_rwd_list = []
-		for j in range(2*POPULATION_SIZE):
+		for j in range(POPULATION_SIZE):
 			execute_episode(j)
 			global_rwd_list.append(simulator.global_rwd)
 
-		# Selecting best weights
-		simulator.select()
-
-		# Storing NNs weights for later execution/visualization
-		simulator.store_bestWeights(NN_WEIGHTS_FILENAME)
+		# Writing global reward to the history file
+		file = open(RWD_FILENAME,'a')
+		wr = csv.writer(file)
+		wr.writerow(global_rwd_list)
+		file.close()
 
 		# Printing overall performance of each NN for each rover
-		for j in range(NUM_ROVERS):
-			performance_list = simulator.get_performance(j)
-			print "Rover %d:" % j,
+		for rover in simulator.rover_list:
+			performance_list = simulator.get_performance(rover.population)
 			for p in performance_list:
 				print "%.3f " % p,
 			print ""
 
-			# Writing to the history file
-			file = open(RWD_FILENAME+str(j),'a')
-			wr = csv.writer(file)
-			wr.writerow(performance_list)
-			file.close()
+		# Selecting best weights
+		simulator.select(NUM_REMOVE)
 
-		# Writing global reward to the history file
-		file = open(RWD_FILENAME+'G','a')
-		wr = csv.writer(file)
-		wr.writerow(global_rwd_list)
-		file.close()
+		# Storing NNs weights for later execution/visualization
+		simulator.store_bestWeights(NN_WEIGHTS_FILENAME)
+
+		# Generate twice as many NNs doing mutated copies
+		simulator.mutateNNs(MUTATION_STD, NUM_REMOVE)
 
 		generation_count += 1
