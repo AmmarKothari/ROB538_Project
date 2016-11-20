@@ -1,8 +1,8 @@
 import math
 
 def cap_distance(vect1, vect2, min_dist_sqr):
-    dist = max(get_norm_sqr(vect_sub(vect1, vect2)), min_dist_sqr)
-    return 1.0 / dist
+    dist_sqr = max(get_norm_sqr(vect_sub(vect1, vect2)), min_dist_sqr)
+    return 1.0 / dist_sqr
 
 def get_norm_sqr(vect):
     return (vect[0] ** 2 + vect[1] ** 2)

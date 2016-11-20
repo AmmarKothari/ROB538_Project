@@ -116,7 +116,7 @@ class Simulator(object):
 	# =======================================================
 
 	# Global reward computation
-	def compute_global_reward(self, pop_set, excluded_rover=-1):
+	def compute_global_reward(self, excluded_rover=-1):
 		reward = 0
 		for poi in self.poi_list:
 			
@@ -151,7 +151,7 @@ class Simulator(object):
 	# Assign differential reward
 	def diff_reward(self, pop_set):
 		for i in range(len(self.rover_list)):
-			self.rover_list[i].population[pop_set].performance = self.global_rwd - self.compute_global_reward(pop_set, i)
+			self.rover_list[i].population[pop_set].performance = self.global_rwd - self.compute_global_reward(i)
 
 	# =======================================================
 	# =======================================================
@@ -227,23 +227,33 @@ class Simulator(object):
 
 
 	# Resetting agents to random or initial starting position
-	def reset_agents(self, rnd_pois = 1, rnd_rover_pos = 1, rnd_custom = 0):
-
-		# Resetting POIs
+	def reset_agents(self, rnd_pois = 1, rnd_rover_pos = 1, rnd_custom = 0, resample_pois = 0):
+			
+		# Zeroing POI observation values
 		for poi in self.poi_list:
-			poi.pos			= poi.init_pos
-			poi.heading		= poi.init_head
-			poi.obs			= np.zeros(self.num_rovers)
-			if rnd_pois:
+			poi.obs	= np.zeros(self.num_rovers)
+		
+		# Repositioning POIs k by k
+		if resample_pois > 0:
+			for poi in random.sample(self.poi_list,resample_pois):
 				px = self.world_width/2+random.randint(-35, 35)
 				py = self.world_height/2+random.randint(-35, 35)
 				poi.pos = px, py
 				poi.heading	= random.randint(0,360)
-			elif rnd_custom > 0:
-				(px, py) = poi.pos
-				px = np.random.normal(loc =px, scale =rnd_custom)
-				py = np.random.normal(loc =py, scale =rnd_custom)
-				poi.pos = px, py
+		else:
+			for poi in self.poi_list:
+				poi.pos			= poi.init_pos
+				poi.heading		= poi.init_head
+				if rnd_pois:
+					px = self.world_width/2+random.randint(-35, 35)
+					py = self.world_height/2+random.randint(-35, 35)
+					poi.pos = px, py
+					poi.heading	= random.randint(0,360)
+				elif rnd_custom > 0:
+					(px, py) = poi.pos
+					px = np.random.normal(loc =px, scale =rnd_custom)
+					py = np.random.normal(loc =py, scale =rnd_custom)
+					poi.pos = px, py
 
 		# Resetting Rovers
 		for rover in self.rover_list:

@@ -27,7 +27,7 @@ NN_OUT_LYR_SIZE		= 2
 NN_HID_LYR_SIZE		= 10
 
 # Evolution parameters
-POPULATION_SIZE		= 20
+POPULATION_SIZE		= 25
 MUTATION_STD		= 0.05
 NUM_GENERATIONS		= 100000
 # REMOVE_RATIO		= 0.01
@@ -45,28 +45,31 @@ SLEEP_VIEW			= 0.100
 ZOOM				= 8.0
 
 # World parameters
-NUM_SIM_STEPS		= 20
+NUM_SIM_STEPS		= 50
 WORLD_WIDTH			= 115.0
 WORLD_HEIGHT		= 100.0
-NUM_ROVERS			= 10
+NUM_ROVERS			= 5
 NUM_POIS			= 6**2
 POI_MIN_VEL			= 0.0
 POI_MAX_VEL			= 0.0
 MIN_SENSOR_DIST		= 5
 MAX_SENSOR_DIST		= 500
+GRID_SIZE			= 10
 
 HOLONOMIC_ROVER		= 1
-MAX_DIST_D			= 10.0
+MAX_TRAVEL_STEP		= 5
 RND_START_EPISODE	= 0
 RND_START			= 0
-RND_CUSTOM			= 0.0*MAX_DIST_D
-INPUT_SCALING		= 1
+RESAMPLE_POIS		= 0
+RND_CUSTOM			= 0.05*GRID_SIZE
 OUTPUT_SCALING		= 1
 STEERING_ONLY		= -5.0
 
 # =======================================================
 # Command Line parameters
 # =======================================================
+
+input_scaling		= MIN_SENSOR_DIST**2
 
 # Choosing reward structure
 rwd_type = LOCAL_REWARD
@@ -102,8 +105,8 @@ poi_init_pos = []
 num_pois_side = int(math.floor(math.sqrt(NUM_POIS)))
 for i in range(num_pois_side):
 	for j in range(num_pois_side):
-		pos_i = MAX_DIST_D*i + WORLD_WIDTH/2 - MAX_DIST_D*num_pois_side/2 + MAX_DIST_D/2
-		pos_j = MAX_DIST_D*j + WORLD_HEIGHT/2 - MAX_DIST_D*num_pois_side/2 + MAX_DIST_D/2
+		pos_i = GRID_SIZE*i + WORLD_WIDTH/2 - GRID_SIZE*num_pois_side/2 + GRID_SIZE/2
+		pos_j = GRID_SIZE*j + WORLD_HEIGHT/2 - GRID_SIZE*num_pois_side/2 + GRID_SIZE/2
 		poi_init_pos.append((pos_i,pos_j,0))
 rover_init_pos = [(WORLD_WIDTH/2, WORLD_HEIGHT/2, 0)]
 
@@ -143,7 +146,7 @@ def draw_world(simulator):
 
 	# Drawing the POIs
 	for poi in simulator.poi_list:
-		canvas.create_polygon(get_points_triangle(poi, l=POI_SIZE), fill="#%x00"%(15*(MIN_SENSOR_DIST**2)*max(poi.obs)))
+		canvas.create_polygon(get_points_triangle(poi, l=POI_SIZE), fill="#0%x0"%(15*(MIN_SENSOR_DIST**2)*max(poi.obs)))
 
 	# Updating the canvas
 	canvas.update()
@@ -156,20 +159,20 @@ def draw_world(simulator):
 def execute_episode(pop_set):
 
 	# Randomizing starting positions
-	simulator.reset_agents(RND_START_EPISODE, RND_START_EPISODE, RND_CUSTOM)
+	simulator.reset_agents(RND_START_EPISODE, RND_START_EPISODE, RND_CUSTOM, RESAMPLE_POIS)
 
 	# Reset performance counter
 	simulator.reset_performance(pop_set)
 
 	# Running through each simulation step
 	for i in range(NUM_SIM_STEPS):
-		simulator.sim_step(pop_set, STEERING_ONLY, MAX_DIST_D, ENABLE_VEL_SENSING)
+		simulator.sim_step(pop_set, STEERING_ONLY, MAX_TRAVEL_STEP, ENABLE_VEL_SENSING)
 		if disable_evol:
 			draw_world(simulator)
 			time.sleep(SLEEP_VIEW)
 
 	# Computing reward
-	simulator.compute_global_reward(pop_set)
+	simulator.compute_global_reward()
 	if rwd_type == LOCAL_REWARD:
 		simulator.local_reward(pop_set)
 	if rwd_type == GLOBAL_REWARD:
@@ -198,7 +201,7 @@ if RND_START:
 else:
 	simulator.init_world_custom(POI_MIN_VEL, POI_MAX_VEL, poi_init_pos, rover_init_pos)
 
-simulator.initRoverNNs(POPULATION_SIZE, NN_IN_LYR_SIZE, NN_OUT_LYR_SIZE, NN_HID_LYR_SIZE, INPUT_SCALING, OUTPUT_SCALING)
+simulator.initRoverNNs(POPULATION_SIZE, NN_IN_LYR_SIZE, NN_OUT_LYR_SIZE, NN_HID_LYR_SIZE, input_scaling, OUTPUT_SCALING)
 
 if disable_evol: # Visualizing results
 
