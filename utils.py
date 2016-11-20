@@ -1,5 +1,12 @@
 import math
 
+def cap_distance(vect1, vect2, min_dist_sqr):
+    dist = max(get_norm_sqr(vect_sub(vect1, vect2)), min_dist_sqr)
+    return 1.0 / dist
+
+def get_norm_sqr(vect):
+    return (vect[0] ** 2 + vect[1] ** 2)
+
 def get_norm(vect):
     return (vect[0] ** 2 + vect[1] ** 2) ** 0.5
 
@@ -25,8 +32,9 @@ def check_quadrant(angle, quadrant):
 def get_quadrant(angle):
     step = math.pi/4
 
-    quadrants = [3, 2, 2, 1, 1, 4, 4, 3]
+    quadrants = [1, 2, 2, 3, 3, 4, 4, 1]
 
     i = angle // step
-
+    if math.isnan(i):
+        pdb.set_trace()
     return quadrants[int(i)]
