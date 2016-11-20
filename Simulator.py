@@ -159,6 +159,14 @@ class Simulator(object):
 			for i in range(pop_size):
 				rover.population.append(NeuralNet(inputLayers, outputLayers, hiddenLayers, input_scaling, output_scaling, i))
 
+	# Printing rover NNs for debugging
+	def printRoverNNs(self, title, rover):
+		print "=============="
+		print title+":"
+		for nn in rover.population:
+			print "%d :: %.6f" % (nn.id,nn.performance)
+		print "=============="
+
 	# Selecting best NNs
 	def select(self,k=None):
 

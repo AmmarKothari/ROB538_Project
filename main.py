@@ -14,14 +14,11 @@ import math
 LOCAL_REWARD		= 0
 GLOBAL_REWARD		= 1
 DIFF_REWARD			= 2
-RWD_TYPE			= GLOBAL_REWARD
 RWD_PATH			= ["LocalRwd", "GlobalRwd", "DiffRwd"]
 
 # File parameters
-NN_WEIGHTS_FILENAME	= "nn_weights/NN_"
+NN_WEIGHTS_PREFX	= "nn_weights/NN_"
 RWD_FILENAME		= "SYS_RWD"
-NN_WEIGHTS_FILENAME = RWD_PATH[RWD_TYPE]+"/"+NN_WEIGHTS_FILENAME
-RWD_FILENAME		= RWD_PATH[RWD_TYPE]+"/"+RWD_FILENAME
 
 # NN parameters
 ENABLE_VEL_SENSING	= 0
@@ -31,11 +28,11 @@ NN_HID_LYR_SIZE		= 10
 
 # Evolution parameters
 POPULATION_SIZE		= 10
-MUTATION_STD		= 0.50
+MUTATION_STD		= 0.05
 NUM_GENERATIONS		= 100000
 # REMOVE_RATIO		= 0.01
 # NUM_CHILDREN		= int(REMOVE_RATIO*POPULATION_SIZE)
-NUM_CHILDREN		= 1
+NUM_CHILDREN		= 2
 
 # Graphics parameters
 WINDOW_TITLE		= "Rob538 Project - Rover Domain"
@@ -51,7 +48,7 @@ ZOOM				= 8.0
 NUM_SIM_STEPS		= 30
 WORLD_WIDTH			= 115.0
 WORLD_HEIGHT		= 100.0
-NUM_ROVERS			= 1
+NUM_ROVERS			= 5
 NUM_POIS			= 6**2
 POI_MIN_VEL			= 0.0
 POI_MAX_VEL			= 0.0
@@ -67,13 +64,38 @@ INPUT_SCALING		= 1
 OUTPUT_SCALING		= 1
 STEERING_ONLY		= -5.0
 
+# =======================================================
+# Command Line parameters
+# =======================================================
+
+# Choosing reward structure
+rwd_type = LOCAL_REWARD
+if len(sys.argv) > 1 and sys.argv[1][0] == '-':
+	if sys.argv[1][1] == 'L':
+		rwd_type = LOCAL_REWARD
+		print "LOCAL_REWARD."
+	elif sys.argv[1][1] == 'G':
+		rwd_type = GLOBAL_REWARD
+		print "GLOBAL_REWARD."
+	elif sys.argv[1][1] == 'D':
+		rwd_type = DIFF_REWARD
+		print "DIFF_REWARD."
+
 # Enabling/disabling evolution with command line parameter
-if len(sys.argv) > 1 and sys.argv[1][0] == '-' and sys.argv[1][1] == 'e':
+if len(sys.argv) > 2 and sys.argv[2][0] == '-' and sys.argv[2][1] == 'e':
 	print "Evolution enabled. No graphics."
 	disable_evol = 0
 else:
 	print "Evolution disabled. Graphics activated."
 	disable_evol = 1
+
+# =======================================================
+# Parameter initialization
+# =======================================================
+
+# File Paths
+nn_weights_path	= RWD_PATH[rwd_type]+"/"+NN_WEIGHTS_PREFX
+rwd_hist_path	= RWD_PATH[rwd_type]+"/"+RWD_FILENAME
 
 # For custom agent initialization
 poi_init_pos = []
@@ -148,11 +170,11 @@ def execute_episode(pop_set):
 
 	# Computing reward
 	simulator.compute_global_reward(pop_set)
-	if RWD_TYPE == LOCAL_REWARD:
+	if rwd_type == LOCAL_REWARD:
 		simulator.local_reward(pop_set)
-	if RWD_TYPE == GLOBAL_REWARD:
+	if rwd_type == GLOBAL_REWARD:
 		simulator.global_reward(pop_set)
-	if RWD_TYPE == DIFF_REWARD:
+	if rwd_type == DIFF_REWARD:
 		simulator.diff_reward(pop_set)
 
 
@@ -181,7 +203,7 @@ simulator.initRoverNNs(POPULATION_SIZE, NN_IN_LYR_SIZE, NN_OUT_LYR_SIZE, NN_HID_
 if disable_evol: # Visualizing results
 
 	# Loading best weights for each robot
-	simulator.load_bestWeights(NN_WEIGHTS_FILENAME)
+	simulator.load_bestWeights(nn_weights_path)
 
 	# Running NUM_GENERATIONS times
 	for i in range(NUM_GENERATIONS):
@@ -190,8 +212,8 @@ if disable_evol: # Visualizing results
 else:	# Evolving new NNs
 
 	# Cleaning the history files
-	os.system("rm "+RWD_FILENAME)
-	os.system("rm "+RWD_PATH[RWD_TYPE]+"/nn_weights/*")
+	os.system("rm "+rwd_hist_path)
+	os.system("rm "+RWD_PATH[rwd_type]+"/nn_weights/*")
 
 	generation_count = 0
 	for i in range(NUM_GENERATIONS):
@@ -199,19 +221,19 @@ else:	# Evolving new NNs
 		print "Generation %d" % generation_count
 
 		# Running an episode for each population member
-		global_rwd_list = []
+		global_rwd_hist = []
 		for j in range(POPULATION_SIZE):
 			execute_episode(j)
-			global_rwd_list.append(simulator.global_rwd)
+			global_rwd_hist.append(simulator.global_rwd)
 
 		# Writing global reward to the history file
-		file = open(RWD_FILENAME,'a')
+		file = open(rwd_hist_path,'a')
 		wr = csv.writer(file)
-		wr.writerow(global_rwd_list)
+		wr.writerow(global_rwd_hist)
 		file.close()
 
 		# Storing NNs weights for later execution/visualization
-		simulator.store_bestWeights(NN_WEIGHTS_FILENAME)
+		simulator.store_bestWeights(nn_weights_path)
 
 		# Selecting best weights
 		simulator.select(NUM_CHILDREN)
