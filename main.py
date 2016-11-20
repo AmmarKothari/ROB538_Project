@@ -14,7 +14,7 @@ import math
 LOCAL_REWARD		= 0
 GLOBAL_REWARD		= 1
 DIFF_REWARD			= 2
-RWD_TYPE			= DIFF_REWARD
+RWD_TYPE			= GLOBAL_REWARD
 RWD_PATH			= ["LocalRwd", "GlobalRwd", "DiffRwd"]
 
 # File parameters
@@ -31,15 +31,16 @@ NN_HID_LYR_SIZE		= 10
 
 # Evolution parameters
 POPULATION_SIZE		= 10
-MUTATION_STD		= 0.001
+MUTATION_STD		= 0.50
 NUM_GENERATIONS		= 100000
-REMOVE_RATIO		= 0.10
-NUM_REMOVE			= int(REMOVE_RATIO*POPULATION_SIZE)
+# REMOVE_RATIO		= 0.01
+# NUM_CHILDREN		= int(REMOVE_RATIO*POPULATION_SIZE)
+NUM_CHILDREN		= 1
 
 # Graphics parameters
 WINDOW_TITLE		= "Rob538 Project - Rover Domain"
 BKG_COLOR			= 'white'
-ROVER_COLOR			= 'orange'
+ROVER_COLOR			= 'orange'	
 POI_COLOR			= 'red'
 ROVER_SIZE			= 5
 POI_SIZE			= 3
@@ -58,12 +59,13 @@ MIN_SENSOR_DIST		= 5
 MAX_SENSOR_DIST		= 500
 
 HOLONOMIC_ROVER		= 1
+MAX_DIST_D			= 10.0
 RND_START_EPISODE	= 0
 RND_START			= 0
+RND_CUSTOM			= 0.2*MAX_DIST_D
 INPUT_SCALING		= 1
 OUTPUT_SCALING		= 1
 STEERING_ONLY		= -5.0
-MAX_DIST_D			= 10.0
 
 # Enabling/disabling evolution with command line parameter
 if len(sys.argv) > 1 and sys.argv[1][0] == '-' and sys.argv[1][1] == 'e':
@@ -78,8 +80,8 @@ poi_init_pos = []
 num_pois_side = int(math.floor(math.sqrt(NUM_POIS)))
 for i in range(num_pois_side):
 	for j in range(num_pois_side):
-		pos_i = MAX_DIST_D*i + WORLD_WIDTH/2 - MAX_DIST_D*num_pois_side/2
-		pos_j = MAX_DIST_D*j + WORLD_HEIGHT/2 - MAX_DIST_D*num_pois_side/2
+		pos_i = MAX_DIST_D*i + WORLD_WIDTH/2 - MAX_DIST_D*num_pois_side/2 + MAX_DIST_D/2
+		pos_j = MAX_DIST_D*j + WORLD_HEIGHT/2 - MAX_DIST_D*num_pois_side/2 + MAX_DIST_D/2
 		poi_init_pos.append((pos_i,pos_j,0))
 rover_init_pos = [(WORLD_WIDTH/2, WORLD_HEIGHT/2, 0)]
 
@@ -132,7 +134,7 @@ def draw_world(simulator):
 def execute_episode(pop_set):
 
 	# Randomizing starting positions
-	simulator.reset_agents(RND_START_EPISODE, RND_START_EPISODE)
+	simulator.reset_agents(RND_START_EPISODE, RND_START_EPISODE, RND_CUSTOM)
 
 	# Reset performance counter
 	simulator.reset_performance(pop_set)
@@ -208,20 +210,13 @@ else:	# Evolving new NNs
 		wr.writerow(global_rwd_list)
 		file.close()
 
-		# Printing overall performance of each NN for each rover
-		for rover in simulator.rover_list:
-			performance_list = simulator.get_performance(rover.population)
-			for p in performance_list:
-				print "%.3f " % p,
-			print ""
-
-		# Selecting best weights
-		simulator.select(NUM_REMOVE)
-
 		# Storing NNs weights for later execution/visualization
 		simulator.store_bestWeights(NN_WEIGHTS_FILENAME)
 
+		# Selecting best weights
+		simulator.select(NUM_CHILDREN)
+
 		# Generate twice as many NNs doing mutated copies
-		simulator.mutateNNs(MUTATION_STD, NUM_REMOVE)
+		simulator.gen_children(MUTATION_STD, NUM_CHILDREN)
 
 		generation_count += 1

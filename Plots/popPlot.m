@@ -6,16 +6,16 @@ clc;
 FILENAME = {'../LocalRwd/SYS_RWD', '../GlobalRwd/SYS_RWD', '../DiffRwd/SYS_RWD'};
 
 AV_WINDOW = 10;
-NUM_ROVERS = 3;
+NUM_ROVERS = 2;
 
 figure;
 hold on;
-for r = 1:3
-    file = csvread(FILENAME{r});
-    plot(mean(file'));
-end
+file = csvread(FILENAME{2});
+plot(max(file'));
+plot(mean(file'));
+plot(min(file'));
 xlabel('Generation');
 ylabel('System reward');
 grid on;
 axis tight;
-legend('L','G','D')
+legend('max','mean','min')

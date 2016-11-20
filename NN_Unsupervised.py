@@ -2,11 +2,12 @@ import numpy as np
 
 class NeuralNet(object):
 
-	def __init__(self, inputLayers, outputLayers, hiddenLayers, input_scaling, output_scaling):
+	def __init__(self, inputLayers, outputLayers, hiddenLayers, input_scaling, output_scaling, nn_id):
 		self.inputLayerSize = inputLayers+1
 		self.outputLayerSize = outputLayers
 		self.hiddenLayerSize = hiddenLayers+1
 		self.performance = 0
+		self.id = nn_id
 		self.input_scaling = input_scaling
 		self.output_scaling = output_scaling
 		self.W1 = np.random.normal(loc =0.0, scale =1.0, size=(self.inputLayerSize,self.hiddenLayerSize))

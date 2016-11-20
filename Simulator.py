@@ -157,19 +157,7 @@ class Simulator(object):
 	def initRoverNNs(self, pop_size, inputLayers, outputLayers, hiddenLayers, input_scaling, output_scaling):
 		for rover in self.rover_list:
 			for i in range(pop_size):
-				rover.population.append(NeuralNet(inputLayers, outputLayers, hiddenLayers, input_scaling, output_scaling))
-
-
-	# Initialize NNs for each rover
-	def mutateNNs(self, mutation_std,k=None):
-		for rover in self.rover_list:
-			childlist = []
-			parents = random.sample(rover.population,k)
-			for parent in parents:
-				child = copy.deepcopy(parent)
-				child.perturb_weights(mutation_std)
-				childlist.append(child)
-			rover.population += childlist
+				rover.population.append(NeuralNet(inputLayers, outputLayers, hiddenLayers, input_scaling, output_scaling, i))
 
 	# Selecting best NNs
 	def select(self,k=None):
@@ -179,13 +167,43 @@ class Simulator(object):
 
 		# Retain k best
 		for rover in self.rover_list:
-			rover.population = self.remove_worst(rover.population,k)
 
-	# Removing the worst performing rover
-	def remove_worst(self, nn_list, k):
-		nn_list = sorted(nn_list, key=attrgetter('performance'))
-		del nn_list[:k]
-		return nn_list
+			# Sorting NNs
+			rover.population = sorted(rover.population, key=attrgetter('performance'))
+
+			# Getting ids of the worse NNs
+			rover.worse_ids = []
+			for nn in rover.population[:k]:
+				rover.worse_ids.append(nn.id)
+
+			# Deleting the worse NNs from the list
+			del rover.population[:k]
+
+
+	# Initialize NNs for each rover
+	def gen_children(self, mutation_std, k=None):
+		for rover in self.rover_list:
+
+			# Getting k parents at random
+			parents = random.sample(rover.population,k)
+
+			for parent in parents:
+
+				# Copy of parent
+				child = copy.deepcopy(parent)
+
+				# Mutation
+				child.perturb_weights(mutation_std)
+
+				# Getting id from deceased NN
+				child.id = rover.worse_ids.pop()
+
+				# Appending children to general population
+				rover.population.append(child)
+
+			# Sorting population according to id
+			rover.population = sorted(rover.population, key=attrgetter('id'))
+
 
 	# Registering new POI
 	def add_poi(self, x=0, y=0, heading=0, value=1.0):
@@ -198,7 +216,7 @@ class Simulator(object):
 
 
 	# Resetting agents to random or initial starting position
-	def reset_agents(self, rnd_pois = 1, rnd_rover_pos = 1):
+	def reset_agents(self, rnd_pois = 1, rnd_rover_pos = 1, rnd_custom = 0):
 
 		# Resetting POIs
 		for poi in self.poi_list:
@@ -210,6 +228,11 @@ class Simulator(object):
 				py = self.world_height/2+random.randint(-35, 35)
 				poi.pos = px, py
 				poi.heading	= random.randint(0,360)
+			elif rnd_custom > 0:
+				(px, py) = poi.pos
+				px = np.random.normal(loc =px, scale =rnd_custom)
+				py = np.random.normal(loc =py, scale =rnd_custom)
+				poi.pos = px, py
 
 		# Resetting Rovers
 		for rover in self.rover_list:
@@ -360,6 +383,7 @@ class Rover(Agent):
 	def __init__(self, posx, posy, heading, holonomic):
 		Agent.__init__(self, posx, posy, heading, 1.0)
 		self.population = []
+		self.worse_ids = []
 		self.holonomic = holonomic
 
 	# Simulation step for the rovers
