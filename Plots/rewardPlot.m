@@ -12,7 +12,7 @@ figure;
 hold on;
 for r = RANGE
     file = csvread(FILENAME{r});    
-    plot(mean(file'));
+    plot(median(file'));
 end
 xlabel('Generation');
 ylabel('System reward');

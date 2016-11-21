@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for i in $(eval echo {1..$2})
+do
+	echo "Test #$i:"
+	(python main.py $1 -e $i &)
+done

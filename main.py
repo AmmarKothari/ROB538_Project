@@ -28,8 +28,8 @@ NN_HID_LYR_SIZE		= 10
 
 # Evolution parameters
 POPULATION_SIZE		= 25
-MUTATION_STD		= 0.05
-NUM_GENERATIONS		= 100000
+MUTATION_STD		= 0.10
+NUM_GENERATIONS		= 200
 # REMOVE_RATIO		= 0.01
 # NUM_CHILDREN		= int(REMOVE_RATIO*POPULATION_SIZE)
 NUM_CHILDREN		= 5
@@ -39,13 +39,13 @@ WINDOW_TITLE		= "Rob538 Project - Rover Domain"
 BKG_COLOR			= 'white'
 ROVER_COLOR			= 'orange'	
 POI_COLOR			= 'red'
-ROVER_SIZE			= 5
+ROVER_SIZE			= 10
 POI_SIZE			= 3
 SLEEP_VIEW			= 0.100
 ZOOM				= 8.0
 
 # World parameters
-NUM_SIM_STEPS		= 50
+NUM_SIM_STEPS		= 15
 WORLD_WIDTH			= 115.0
 WORLD_HEIGHT		= 100.0
 NUM_ROVERS			= 5
@@ -91,6 +91,10 @@ if len(sys.argv) > 2 and sys.argv[2][0] == '-' and sys.argv[2][1] == 'e':
 else:
 	print "Evolution disabled. Graphics activated."
 	disable_evol = 1
+
+# Evolution history file number
+if len(sys.argv) > 3:
+	RWD_FILENAME += sys.argv[3]
 
 # =======================================================
 # Parameter initialization
