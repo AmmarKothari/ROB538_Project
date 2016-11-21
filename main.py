@@ -6,6 +6,10 @@ import csv
 import time
 import math
 
+
+import numpy as np
+import pdb
+
 # =======================================================
 # Parameters
 # =======================================================
@@ -65,6 +69,10 @@ RND_CUSTOM			= 0.05*GRID_SIZE
 OUTPUT_SCALING		= 1
 STEERING_ONLY		= -5.0
 
+SELECTION_METHOD 	= 'TEAM'  #'Team', 'HOF'
+# HOF Selection
+best_pop			= np.ones(NUM_ROVERS, dtype = int) * -1
+
 # =======================================================
 # Command Line parameters
 # =======================================================
@@ -95,6 +103,12 @@ else:
 # Evolution history file number
 if len(sys.argv) > 3:
 	RWD_FILENAME += sys.argv[3]
+
+if len(sys.argv) > 4 and sys.argv[4][0] == '-':
+	if sys.argv[4][1:].upper() == 'TEAM':
+		SELECTION_METHOD = 'TEAM'
+	elif sys.argv[4][1:].upper() == 'HOF':
+		SELECTION_METHOD = 'HOF'
 
 # =======================================================
 # Parameter initialization
@@ -214,7 +228,8 @@ if disable_evol: # Visualizing results
 
 	# Running NUM_GENERATIONS times
 	for i in range(NUM_GENERATIONS):
-		execute_episode(0)
+		pop_set = np.zeros(NUM_ROVERS, dtype = int)
+		execute_episode(pop_set)
 
 else:	# Evolving new NNs
 
@@ -229,9 +244,28 @@ else:	# Evolving new NNs
 
 		# Running an episode for each population member
 		global_rwd_hist = []
-		for j in range(POPULATION_SIZE):
-			execute_episode(j)
-			global_rwd_hist.append(simulator.global_rwd)
+
+
+		if SELECTION_METHOD == 'HOF':
+			for r in range(NUM_ROVERS):
+				pop_set = copy.deepcopy(best_pop)
+				for j in range(POPULATION_SIZE):
+					pop_set[r] = j
+					execute_episode(pop_set)
+					global_rwd_hist.append(simulator.global_rwd)
+
+		elif SELECTION_METHOD == 'TEAM':
+			for j in range(POPULATION_SIZE):
+				pop_set = np.ones(NUM_ROVERS, dtype = int)*j
+				execute_episode(pop_set)
+				global_rwd_hist.append(simulator.global_rwd)
+
+		else:
+			for j in range(POPULATION_SIZE):
+				pop_set = np.ones(NUM_ROVERS, dtype = int)*j
+				execute_episode(pop_set)
+				global_rwd_hist.append(simulator.global_rwd)
+
 
 		# Writing global reward to the history file
 		file = open(rwd_hist_path,'a')

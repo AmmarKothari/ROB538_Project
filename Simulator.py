@@ -6,6 +6,7 @@ from NN_Unsupervised import NeuralNet
 from operator import attrgetter
 import copy
 import random
+import pdb
 
 # =======================================================
 # Simulator
@@ -69,8 +70,11 @@ class Simulator(object):
 
 	# Reset performance counter
 	def reset_performance(self, pop_set):
-		for rover in self.rover_list:
-			rover.population[pop_set].performance = 0
+		from main import SELECTION_METHOD
+		# -1 means we are not testing that network so don't need to reset
+		for i in range(len(pop_set)):
+			if pop_set[i] > -1:
+				self.rover_list[i].population[pop_set[i]].performance = 0
 
 	# Reset performance counter
 	def get_performance(self, nn_list):
@@ -92,15 +96,32 @@ class Simulator(object):
 
 	# Iterate the world simulation
 	def sim_step(self, pop_set, steering_only, max_dist_d, sensing_vel):
-
+		from main import SELECTION_METHOD
 		# POIs step
 		for poi in self.poi_list:
 			poi.sim_step(self.world_width,self.world_height)
 
 		# Rovers step
+		# repeat for each rover in that team to get HOF result
+		r = 0
 		for rover in self.rover_list:
 			inputs = self.return_NN_inputs(rover, sensing_vel)
-			outputs = rover.population[pop_set].forward(inputs)
+			if SELECTION_METHOD == 'HOF':
+				if pop_set[r] >  0:
+					outputs = rover.population[pop_set[r]].forward(inputs)
+				else: #pop_set[r] < 0 -- HOF candidates
+					if rover.best == 0: #first time, there won't be a best so just pick one
+						HOF = sorted(rover.population, key=attrgetter('performance'))[-1]
+					else:
+						HOF = rover.best
+					outputs = HOF.forward(inputs)
+
+			elif SELECTION_METHOD == 'TEAM':
+				outputs = rover.population[pop_set[r]].forward(inputs) #current method of selecting a team
+			else:
+				outputs = rover.population[pop_set].forward(inputs) #current method of selecting a team
+			
+			r += 1
 			outputs = 2*max_dist_d*(outputs-0.5)
 			rover.sim_step(outputs, steering_only)
 
@@ -140,18 +161,32 @@ class Simulator(object):
 		# for poi in self.poi_list:
 		# 	self.rover_list[np.argmax(poi.obs)].population[pop_set].performance += np.max(poi.obs)
 		for i in range(len(self.rover_list)):
-			for poi in self.poi_list:
-				self.rover_list[i].population[pop_set].performance += poi.obs[i]
+			if pop_set[i] > -1:
+				for poi in self.poi_list:
+					self.rover_list[i].population[pop_set[i]].performance += poi.obs[i]
 
 	# Assign global reward
 	def global_reward(self, pop_set):
-		for rover in self.rover_list:
-			rover.population[pop_set].performance = self.global_rwd
+		for i in range(len(self.rover_list)):
+			if pop_set[i] > -1:
+				for poi in self.poi_list:
+					self.rover_list[i].population[pop_set[i]].performance = self.global_rwd
 
 	# Assign differential reward
 	def diff_reward(self, pop_set):
-		for i in range(len(self.rover_list)):
-			self.rover_list[i].population[pop_set].performance = self.global_rwd - self.compute_global_reward(i)
+		# pdb.set_trace()
+		from main import SELECTION_METHOD
+		if SELECTION_METHOD == 'HOF':
+			i = np.argmax(pop_set)
+			#only assign it to the rover the single population that was being tested
+			self.rover_list[i].population[pop_set[i]].performance = self.global_rwd - self.compute_global_reward(i)
+		elif SELECTION_METHOD == 'TEAM':
+			for i in range(len(self.rover_list)):
+				self.rover_list[i].population[pop_set[i]].performance = self.global_rwd - self.compute_global_reward(i)
+
+		else:
+			for i in range(len(self.rover_list)):
+				self.rover_list[i].population[pop_set].performance = self.global_rwd - self.compute_global_reward(i)
 
 	# =======================================================
 	# =======================================================
@@ -189,6 +224,9 @@ class Simulator(object):
 
 			# Deleting the worse NNs from the list
 			del rover.population[:k]
+
+			#store location of best
+			self.best = rover.population[-1]
 
 
 	# Initialize NNs for each rover
@@ -406,6 +444,7 @@ class Rover(Agent):
 		self.population = []
 		self.worse_ids = []
 		self.holonomic = holonomic
+		self.best      = 0 #stores best performer object
 
 	# Simulation step for the rovers
 	def sim_step(self, nn_outputs, steering_only):
